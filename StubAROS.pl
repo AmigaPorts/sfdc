@@ -16,7 +16,6 @@ BEGIN {
 
     sub header {
       my $self = shift;
-      
       $self->SUPER::header (@_);
 
       print "#include <aros/libcall.h>\n";
@@ -69,13 +68,11 @@ BEGIN {
           $self->SUPER::function_arg (@_);
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-      
       if ($$prototype{'type'} eq 'function') {
           if ($prototype->{nb}) {
             my $bt = "/* bt */";
@@ -88,7 +85,6 @@ BEGIN {
                   last;
                 }
             }
-            
             printf "    $bt, $bn, %d, $sfd->{Basename});\n",
             $prototype->{bias} / 6;
           }
@@ -100,7 +96,6 @@ BEGIN {
           if (!$prototype->{nr}) {
             print "  return _res;\n";
           }
-          
           print "};\n";
       }
       else {

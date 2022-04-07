@@ -38,7 +38,7 @@ BEGIN {
       print "#endif /* __cplusplus */\n";
       print "\n";
 
-      if ($$sfd{'base'} ne '') { 
+      if ($$sfd{'base'} ne '') {
           print "#ifndef BASE_EXT_DECL\n";
           print "#define BASE_EXT_DECL\n";
           print "#define BASE_EXT_DECL0 extern $$sfd{'basetype'} " .
@@ -69,7 +69,6 @@ BEGIN {
       if ($prototype->{private}) {
           return;
       }
-      
       $self->function_proto (prototype => $prototype, decl_regular => $self->{NEWFILE} );
       $self->function_start (prototype => $prototype);
       for my $i (0 .. $$prototype{'numargs'} - 1 ) {
@@ -105,7 +104,6 @@ BEGIN {
 
 
     # Helper functions
-    
     sub function_proto {
       my $self     = shift;
       my %params   = @_;
@@ -144,8 +142,6 @@ BEGIN {
           (undef, $struct) = ( $argtype =~ /\s*(const)?\s*struct\s*(\w+).*/) and
             printf "struct $struct;\n";
       }
-
-      
       print "__inline $$prototype{'return'}\n";
       print "$$prototype{'funcname'}(";
       if (!$prototype->{nb}) {
@@ -158,7 +154,6 @@ BEGIN {
       }
       print join (', ', @{$$prototype{'___args'}});
       print ")";
-      
     }
 
     sub function_start {
@@ -166,7 +161,6 @@ BEGIN {
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-      
       print "\n";
       print "{\n";
 
@@ -194,7 +188,6 @@ BEGIN {
 
           # Skip jmp instruction (is m68k ILLEGAL in MOS)
           my $offs = $$prototype{'bias'} - 2;
-          
           print "  $$prototype{'return'} (*_func) ($argtypes) = \n";
           print "    ($$prototype{'return'} (*) ($argtypes))\n";
           print "    *((ULONG*) (((char*) BASE_NAME) - $offs));\n";
@@ -222,7 +215,6 @@ BEGIN {
       my $sfd       = $self->{SFD};
 
       my $argstr;
-      
       if ($$prototype{'type'} eq 'varargs') {
           if ($prototype->{subtype} eq 'printfcall') {
             if ($argnum < $$prototype{'numargs'} - 1) {
@@ -272,7 +264,6 @@ BEGIN {
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-      
       print ");\n";
       print "}\n";
 

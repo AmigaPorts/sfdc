@@ -2,17 +2,17 @@
 #
 #     sfdc - Compile SFD files into someting useful
 #     Copyright (C) 2003-2005 Martin Blom <martin@blom.org>
-#     
+#
 #     This program is free software; you can redistribute it and/or
 #     modify it under the terms of the GNU General Public License
 #     as published by the Free Software Foundation; either version 2
 #     of the License, or (at your option) any later version.
-#     
+#
 #     This program is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-#     
+#
 #     You should have received a copy of the GNU General Public License
 #     along with this program; if not, write to the Free Software
 #     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -37,7 +37,6 @@ if ($@) {
 
       sub pod2usage {
           my @params = @_;
-          
           my $verbose = 0;
           my $exitval = 0;
           my $message = "";
@@ -51,7 +50,6 @@ if ($@) {
                 /^-output$/  && do { $output  = shift @params};
             }
           }
-      
           print $output "$message\n" if $message;
           print $output "\n";
           print $output "Perl module Pod::Usage is missing.\n";
@@ -61,7 +59,6 @@ if ($@) {
       }
     ';
 }
-    
 sub parse_sfd ( $ );
 sub parse_proto ( $$$ );
 sub open_output ( $$ );
@@ -118,7 +115,6 @@ my %targets = (
              gatestubs => 'Gate',
              interface => 'Interface'
              },
-    
             '(\w)+(-.*)?-aros' =>
              { target    => 'aros',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -127,7 +123,6 @@ my %targets = (
              gatestubs => 'GateAROS',
              interface => 'Interface'
              },
-             
             'i.86be(-pc)?-amithlon' =>
              { target    => 'amithlon',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -136,7 +131,6 @@ my %targets = (
              gatestubs => 'GateAmithlon',
              interface => 'Interface'
              },
-             
             'm68k(-unknown)?-amigaos' =>
              { target    => 'amigaos',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -145,7 +139,6 @@ my %targets = (
              gatestubs => 'Gate68k',
              interface => 'Interface'
              },
-             
             'm68kvbcc(-unknown)?-amigaos' =>
              { target    => 'amigaosvbcc',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -154,7 +147,6 @@ my %targets = (
              gatestubs => 'Gate',
              interface => 'Interface'
              },
-             
             'p(ower)?pc(-unknown)?-amigaos' =>
              { target    => 'amigaos4',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -163,7 +155,6 @@ my %targets = (
              gatestubs => 'GateAOS4',
              interface => 'InterfaceAOS4'
              },
-    
             'p(ower)?pc(-unknown)?-morphos' =>
              { target    => 'morphos',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -292,12 +283,10 @@ for my $i ( 0 .. $#ARGV ) {
           $obj = Dump->new( sfd => $sfd );
           last;
       };
-    
       /^fd$/ && do {
           $obj = FD->new( sfd => $sfd );
           last;
       };
-    
       /^functable$/ && do {
           $obj = FuncTable->new( sfd => $sfd );
           last;
@@ -319,7 +308,6 @@ for my $i ( 0 .. $#ARGV ) {
           $obj = $$classes{'interface'}->new( sfd => $sfd );
           last;
       };
-      
       /^macros$/ && do {
           $obj = $$classes{'macros'}->new( sfd => $sfd );
 
@@ -361,12 +349,10 @@ for my $i ( 0 .. $#ARGV ) {
                                     libproto => 0);
           last;
       };
-      
       /^gatestubs$/ && do {
           $obj = $$classes{'gatestubs'}->new( sfd => $sfd,
                                     proto => 0,
                                     libproto => 0);
-                                    
           last;
       };
 
@@ -377,7 +363,6 @@ for my $i ( 0 .. $#ARGV ) {
     for my $j ( 0 .. $num + 1) {
       my $prototype = $$sfd{'prototypes'}[$j];
       my $funcname  = $$prototype{'funcname'};
-      
       if (!defined ($funcname) || will_close_output ($sfd, $funcname) != 0) {
           $obj->footer ();
       }
@@ -385,7 +370,6 @@ for my $i ( 0 .. $#ARGV ) {
       if ($j > $num) {
           last;
       }
-      
       if (open_output ($sfd, $funcname) != 0) {
           $obj->header ();
       }
@@ -457,7 +441,6 @@ sub parse_sfd ( $ ) {
       elsif ($addvectors eq 'boopsi') {
           push @{$$result{'includes'}}, '<intuition/classes.h>';
       }
-      
       for my $i ( 0 .. $#{$classes->{vectors}->{$addvectors}} ) {
           push @{$$result{'prototypes'}}, {
             type    => 'function',
@@ -471,8 +454,6 @@ sub parse_sfd ( $ ) {
             };
       }
     }
-      
-    
     my $proto_line = '';
     my %proto;
 
@@ -481,7 +462,6 @@ sub parse_sfd ( $ ) {
       print STDERR "Processing SFD file '$fn'.\n";
       STDERR->flush();
     }
-    
     unless (open (SFD, "<" . $file)) {
       print STDERR "Unable to open file '$file'.\n";
       die;
@@ -493,8 +473,7 @@ sub parse_sfd ( $ ) {
     while (my $line = <SFD>) {
 
       ++$line_no;
-      $line =~ s/\r//g; 
-      
+      $line =~ s/\r//g;
       for ($line) {
           /==copyright\s/ && do {
             ( $$result{'copyright'} = $_ ) =~ s/==copyright\s+(.*)\s*/$1/;
@@ -534,7 +513,6 @@ sub parse_sfd ( $ ) {
             push @{$$result{'typedefs'}}, $td;
             last;
           };
-          
           /==bias\s+/ && do {
             ( $bias = $_ ) =~ s/==bias\s+(.*)\s*/$1/;
             last;
@@ -560,7 +538,6 @@ sub parse_sfd ( $ ) {
             $bias -= 6;
             last;
           };
-          
           /==private\s*$/ && do {
             $private = 1;
             last;
@@ -575,18 +552,15 @@ sub parse_sfd ( $ ) {
             ( $version = $_ ) =~ s/==version\s+(.*)\s*/$1/;
             last;
           };
-          
           /==end\s*$/ && do {
             last LINE;
           };
-          
           /^\*/ && do {
             ( my $cmt = $_ ) =~ s/^\*(.*)\s*/$1/;
 
             $comment .= ($comment eq '' ? "" : "\n" ) . $cmt;
             last;
           };
-          
           /^[^=*\n]/ && do {
             # Strip whitespaces and append
             $line =~ s/\s*(.*)\s*/$1/;
@@ -661,7 +635,6 @@ sub parse_sfd ( $ ) {
           $$prototype{'real_funcname'}  = '';
           $$prototype{'real_prototype'} = '';
       }
-      
       parse_proto ($result, $prototype, $varargs_type);
 
       if ($$prototype{'type'} eq 'function') {
@@ -715,7 +688,6 @@ sub parse_proto ( $$$ ) {
     my $sfd          = shift;
     my $prototype    = shift;
     my $varargs_type = shift;
-    
     my $return;
     my $name;
     my $arguments;
@@ -729,7 +701,7 @@ sub parse_proto ( $$$ ) {
 
 #	print STDERR "->" . $$prototype{'value'} . "\n";
 
-	# eliminate double spaces 
+	# eliminate double spaces
     $$prototype{'value'} =~ s/\s+/ /g;
 	# eliminate spaces befor registers
     $$prototype{'value'} =~ s/,\s+([ad][0-7])/,${1}/g;
@@ -772,7 +744,6 @@ sub parse_proto ( $$$ ) {
 
     $$prototype{'numargs'}  = 0;
     $$prototype{'numregs'}  = 0;
-    
     @{$$prototype{'regs'}}        = ();
     @{$$prototype{'args'}}        = ();
     @{$$prototype{'___args'}}     = ();
@@ -786,7 +757,7 @@ sub parse_proto ( $$$ ) {
 
     my @args = split(/,/,$arguments);
 
-    # Fix function pointer arguments and build $$prototype{'args'} 
+    # Fix function pointer arguments and build $$prototype{'args'}
 
     my $par_cnt = 0;
     foreach my $arg (@args) {
@@ -795,7 +766,6 @@ sub parse_proto ( $$$ ) {
 
       if ($par_cnt != 0) {
           my $old_arg = pop @{$$prototype{'args'}};
-          
           push @{$$prototype{'args'}}, $old_arg . "," . $arg;
       }
       else {
@@ -827,7 +797,6 @@ sub parse_proto ( $$$ ) {
             $d_cnt++;
           }
       }
-      
       $prototype->{numregs} = $#{$$prototype{'regs'}} + 1;
       $prototype->{nb}      = $sfd->{base} eq '';
     }
@@ -839,7 +808,6 @@ sub parse_proto ( $$$ ) {
     }
 
     $$prototype{'nr'} = $$prototype{'return'} =~ /^(VOID|void)$/;
-    
     # varargs sub types:
     #   printfcall: LONG Printf( STRPTR format, ... );
     #     All varargs are optional
@@ -858,7 +826,6 @@ sub parse_proto ( $$$ ) {
                 print STDERR "Warning: Adding missing Tag argument to " .
                   $prototype->{funcname} . "()\n";
             }
-            
             my $last = pop @{$prototype->{args}};
             push @{$prototype->{args}}, "Tag _tag1" ;
             push @{$prototype->{args}}, $last;
@@ -888,7 +855,6 @@ sub parse_proto ( $$$ ) {
                   "Library has no base!\n";
                 die;
             }
-            
             $prototype->{nb} = 0;
             next;
           };
@@ -915,7 +881,6 @@ sub parse_proto ( $$$ ) {
 
       ($prototype->{type} eq 'function' &&
        $prototype->{numargs} != $prototype->{numregs})) {
-      
       print STDERR "Failed to parse arguments/registers on SFD " .
           "line $$prototype{'line'}:\n$$prototype{'value'}\n";
       print STDERR "The number of arguments doesn't match " .
@@ -924,7 +889,6 @@ sub parse_proto ( $$$ ) {
     }
 
     my $type = '';
-    
     foreach my $arg (@{$$prototype{'args'}}) {
       my $name    = '';
       my $___name = '';
@@ -934,7 +898,6 @@ sub parse_proto ( $$$ ) {
       if ($arg =~ /.*\(.*?\)\s*(__CLIB_PROTOTYPE)?\(.*\)/) {
           my $type1;
           my $type2;
-          
           ($type1, $name, $type2) =
             ( $arg =~ /^\s*(.*)\(\s*\*+\s*(\w+)\s*\)\s*(\w*\(.*\))\s*/ );
           $type = "$type1(*)$type2";
@@ -985,7 +948,6 @@ sub BEGIN {
       close (STDOUT);
       $old_output = '';
     }
-    
 
 ### check_output: Check if the file will be reopended by open_output ##########
 
@@ -1008,7 +970,6 @@ sub BEGIN {
           return 0;
       }
     }
-    
 ### open_output: (Re)open the output file if necessary  #######################
 
     sub open_output ( $$ ) {
@@ -1036,7 +997,6 @@ sub BEGIN {
                 print STDERR "Writing to '$new_output'\n";
             }
           }
-          
           $old_output = $new_output;
 
           return 1;

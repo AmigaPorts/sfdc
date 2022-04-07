@@ -54,7 +54,6 @@ BEGIN {
           if ($argreg eq 'a4' || $argreg eq 'a5') {
             $argreg = 'd7';
           }
-          
           print "  register $prototype->{args}[$argnum] __asm(\"$argreg\") " .
             "= $argname;\n";
       }
@@ -62,14 +61,11 @@ BEGIN {
           $self->SUPER::function_arg (@_);
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-
-      
       if ($$prototype{'type'} eq 'function') {
           my $regs      = join(',', @{$$prototype{'regs'}});
           my $a4        = $regs =~ /a4/;
@@ -102,14 +98,12 @@ BEGIN {
             if ($i != 0 || !$prototype->{nb}) {
                 print ", ";
             }
-            
             print '"r" (' . $prototype->{argnames}[$i] . ')';
           }
 
           print "\n";
           print '  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");';
           print "\n";
-          
           if (!$prototype->{nr}) {
             print "  return _res;\n";
           }

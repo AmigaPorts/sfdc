@@ -19,7 +19,6 @@ BEGIN {
       my $sfd  = $self->{SFD};
 
       $self->SUPER::header (@_);
-      
       print "#ifndef AROS_LIBCALL_H\n";
       print "#include <aros/libcall.h>\n";
       print "#endif /* !AROS_LIBCALL_H */\n";
@@ -59,7 +58,6 @@ BEGIN {
           my $argtype   = $params{'argtype'};
           my $argname   = $params{'argname'};
           my $argreg    = $params{'argreg'};
-          
           print " AROS_LCA($argtype, ($argname), " . uc $argreg . "), \\\n";
       }
         else {
@@ -88,10 +86,8 @@ BEGIN {
                   last;
                 }
             }
-            
             print "     $bt, $bn, ";
           }
-          
           print $$prototype{'bias'} / 6;
           print ", $sfd->{Basename})\n";
       }

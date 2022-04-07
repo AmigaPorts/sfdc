@@ -17,7 +17,6 @@ BEGIN {
     sub header {
       my $self = shift;
       my $sfd  = $self->{SFD};
-      
       $self->SUPER::header (@_);
 
       print "#undef __USE_INLINE__\n";
@@ -52,7 +51,6 @@ BEGIN {
                              argnum    => $i );
           }
           $self->function_end (prototype => $prototype);
-          
           print "\n";
 
           if ($prototype->{type} eq 'function' && $prototype->{bias} != 0) {
@@ -72,7 +70,6 @@ BEGIN {
           }
       }
     }
-    
     sub function_start {
       my $self      = shift;
       my %params    = @_;
@@ -132,7 +129,6 @@ BEGIN {
           }
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
@@ -145,14 +141,12 @@ BEGIN {
       else {
           print ")\n";
           print "{\n";
-          
           if ($prototype->{subtype} =~ /^(library|device|boopsi)$/ &&
             $prototype->{bias} == 0) {
             print "  $prototype->{___args}[$prototype->{numargs} - 1] = ".
                 "($prototype->{argtypes}[$prototype->{numargs} - 1]) " .
                 "_iface->Data.LibBase;\n";
           }
-          
           if ($prototype->{type} ne 'varargs') {
             print "  return $libprefix$prototype->{funcname}(";
 
@@ -181,7 +175,6 @@ BEGIN {
                 # methodcall: first vararg is removed
                 $na = $prototype->{numargs} - 3;
             }
-            
             print "  va_list _va;\n";
             print "  va_startlinear (_va, ";
             if ($na >= 0) {
@@ -204,13 +197,11 @@ BEGIN {
 
             print "va_getlinearva (_va, " .
                 "$prototype->{argtypes}[$prototype->{numargs}-1])";
-            
             if ($libarg eq 'last' && !$prototype->{nb}) {
                 print $prototype->{numargs} > 0 ? ", " : "";
                 print "($sfd->{basetype}) _iface->Data.LibBase";
             }
           }
-      
           print ");\n";
           print "}\n";
       }
@@ -228,7 +219,6 @@ BEGIN {
       print "{\n";
       print "  struct Library * _base = (struct Library *) regarray[REG68K_A6/4];\n";
       print "  struct ExtendedLibrary * ExtLib = (struct ExtendedLibrary *) ((ULONG) _base + _base->lib_PosSize);\n";
-      
       if ($prototype->{subtype} =~ /^(library|device|boopsi)$/) {
           # Special function prototype
 
@@ -264,7 +254,6 @@ BEGIN {
       print "  $prototype->{___args}[$argnum] = ($argtype) regarray[REG68K_" .
           (uc $argreg) . "/4];\n";
     }
-    
     sub emu_function_end {
       my $self      = shift;
       my %params    = @_;
@@ -274,7 +263,6 @@ BEGIN {
       print "\n";
 
       my $funcname = $prototype->{funcname};
-      
       if ($prototype->{subtype} eq 'library' ||
           $prototype->{subtype} eq 'device' ||
           $prototype->{subtype} eq 'boopsi') {
@@ -302,7 +290,6 @@ BEGIN {
             }
           }
       }
-      
       print "  return _iface->$funcname(";
       print join (', ', @{$prototype->{___argnames}});
 
@@ -315,7 +302,6 @@ BEGIN {
       print "}\n";
       print "\n";
     }
-    
     sub emu_trap {
       my $self      = shift;
       my %params    = @_;
@@ -331,7 +317,6 @@ BEGIN {
       if (!$self->{PROTO}) {
           print " = { TRAPINST, TRAPTYPE, (ULONG (*)(ULONG *)) $gateprefix$prototype->{funcname}PPC }";
       }
-      
       print ";\n";
       print "\n";
     }

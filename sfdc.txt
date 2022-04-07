@@ -29,9 +29,8 @@
             Sets a function name prefix for the gate stub functions when
             generating gatestubs or gateproto files.
 
-    [1m--help[0m  Show the full help message and exit.
+    [1m--help[0m  Show the full help message and exit. =item [1m--libarg[0m
 
-    [1m--libarg[0m
             Specifies where to place the library base argument when
             generating gatestubs or gateproto and libproto files. Possible
             values are [1mnone[0m, [1mfirst[0m and [1mlast[0m. The default is [1mnone[0m.
@@ -67,9 +66,8 @@
                 a library function table. By defining the preprocessor
                 symbol [1m__SFDC_FUNCTABLE_M68K__[0m, the list of functions will
                 be modified so it's suitable for AmigaOS 4's m68k function
-                table.
+                table. =item [1mgateproto[0m
 
-            [1mgateproto[0m
                 Generate a prototype header file for library gate stubs.
                 Useful for library and device developers.
 
@@ -92,16 +90,15 @@
                 Generate a header file containing [36mgcc[0m specific preprocessor
                 macros, similar to [36mfd2inline[0m's [1m--new[0m switch. For AROS
                 targets, it generates a file suitable to be placed in the
-                [36mInclude/defines/[0m directory.
+                [36mInclude/defines/[0m directory. =item [1mproto[0m
 
-            [1mproto[0m
                 Generate header file to be placed in [36mInclude/proto/[0m that
                 includes the C prototypes as well as compiler-specific
                 inlines or pragma files.
 
             [1mpragmas[0m
-                Generate a [36mSAS/C[0m/[36mLATTICE[0m/[36mDICE[0m and [36mMaxon C[0m/[36mStorm C[0m/[36mAztec
-                C[0m pragma file.
+                Generate a [36mSAS/C[0m/[36mLATTICE[0m/[36mDICE[0m and [36mMaxon C[0m/[36mStorm C[0m/[36mAztec C[0m
+                pragma file.
 
             [1mstubs[0m
                 Generate C library stubs suitable to be compiled and
@@ -137,8 +134,7 @@
             names follow the GNU autoconf standard. Some possible values are
             listed below. The default is [1mm68k-unknown-amigaos[0m.
 
-            [1mi?86-pc-aros[0m, [1mi?86-linux-aros[0m, [1mppc-aros[0m
-            ...
+            [1mi?86-pc-aros[0m, [1mi?86-linux-aros[0m, [1mppc-aros[0m ...
                 AROS. Anything goes, as long as it ends in "-aros".
 
             [1mi?86be-pc-amithlon[0m, [1mi?86be-amithlon[0m
@@ -184,8 +180,8 @@
     *   Generate [36mgcc[0m [1minlines[0m (actually preprocessor macros) or [1mpragmas[0m for
         direct library function calls (without going via library stubs).
 
-    *   Generate the [36mInclude/proto/[0m file, which includes the
-        [36mInclude/clib/[0m file and either the inlines or pragmas.
+    *   Generate the [36mInclude/proto/[0m file, which includes the [36mInclude/clib/[0m
+        file and either the inlines or pragmas.
 
     *   Generate an [1massembler LVO[0m file, which contains the library offset of
         all functions in the library.
@@ -248,9 +244,9 @@
 
     *   Replace "-" with "_" in base/library name.
 
-    *   New special keyword for register specification (in addition to
-        [1msysv[0m and [1mbase[0m): [1mautoreg[0m, which automatically allocates m68k
-        registers for the arguments.
+    *   New special keyword for register specification (in addition to [1msysv[0m
+        and [1mbase[0m): [1mautoreg[0m, which automatically allocates m68k registers for
+        the arguments.
 
     *   [1msysv[0m now works correctly with varargs functions. [1msysv[0m combined with
         [1mgatestubs[0m work for m68k and i386 only for now. For AROS targets in

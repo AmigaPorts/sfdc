@@ -17,7 +17,6 @@ BEGIN {
     sub header {
       my $self = shift;
       my $sfd  = $self->{SFD};
-      
       $self->SUPER::header (@_);
 
       print "#include <aros/libcall.h>\n";
@@ -38,7 +37,6 @@ BEGIN {
 
       $self->SUPER::function (@_);
     }
-      
     sub function_start {
       my $self      = shift;
       my %params    = @_;
@@ -54,7 +52,6 @@ BEGIN {
             my $typename = "$sfd->{Basename}_$prototype->{funcname}_fp$i";
 
             $typedef =~ s/\(\*\)/(*_$typename)/;
-                
             print "typedef $typedef;\n";
           }
       }
@@ -87,9 +84,8 @@ BEGIN {
       }
       else {
           print " AROS_LHA($argtype, $argname, " . (uc $argreg) . "),\n";
-      }         
+      }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
@@ -134,12 +130,10 @@ BEGIN {
           }
 
           print join (', ', @{$prototype->{___argnames}});
-      
           if ($libarg eq 'last' && !$prototype->{nb}) {
             print $prototype->{numargs} > 0 ? ", " : "";
             print "_base";
           }
-      
           print ");\n";
           print "  AROS_LIBFUNC_EXIT\n";
           print "}\n";

@@ -49,7 +49,7 @@ BEGIN {
           print "# include <interfaces/${basename}.h>\n";
           print "# ifndef __NOGLOBALIFACE__\n";
           print "   extern struct ${BaseName}IFace *I${BaseName};\n";
-          print "# endif /* __NOGLOBALIFACE__*/\n";  
+          print "# endif /* __NOGLOBALIFACE__*/\n";
           print "#endif /* !__amigaos4__ */\n";
           print "#ifndef __NOLIBBASE__\n";
           print "  extern ${basetype}\n";

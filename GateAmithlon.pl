@@ -16,7 +16,6 @@ BEGIN {
 
     sub header {
       my $self = shift;
-      
       $self->SUPER::header (@_);
 
       print "#ifndef __INLINE_MACROS_H\n";
@@ -63,7 +62,6 @@ BEGIN {
       print_gateproto($sfd, $prototype);
       print ";\n\n";
     }
-    
     sub function_start {
       my $self      = shift;
 
@@ -95,7 +93,6 @@ BEGIN {
             "r;});\n";
       }
     }
-    
     sub function_end {
       my $self      = shift;
 
@@ -119,12 +116,10 @@ BEGIN {
           }
 
           print join (', ', @{$prototype->{___argnames}});
-      
           if ($libarg eq 'last' && !$prototype->{nb}) {
             print $prototype->{numargs} > 0 ? ", " : "";
             print "_base";
           }
-      
           print ");\n";
           print "}\n";
       }
@@ -133,7 +128,6 @@ BEGIN {
     sub print_gateproto {
       my $sfd       = shift;
       my $prototype = shift;
-      
       print "$prototype->{return}\n";
       print "$gateprefix$prototype->{funcname}" .
           "(struct _Regs* _regs) __attribute__((regparm(3)))";

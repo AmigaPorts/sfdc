@@ -69,10 +69,8 @@ BEGIN {
       }
 
       my $regs = '';
-      
       foreach my $reg (@{$prototype->{regs}}) {
           my $num;
-          
           if ($reg =~ /^d[0-7]$/) {
             ($num) = $reg =~ /^d(.)/;
           }
@@ -89,7 +87,6 @@ BEGIN {
 
       $regs .= '0'; #Result in d0
       $regs .= $prototype->{numregs};
-      
       if ($prototype->{type} eq 'function') {
           # Always use libcall, since access to 4 is very expensive
 
@@ -125,7 +122,6 @@ BEGIN {
           die;
       }
     }
-    
     sub footer {
       my $self = shift;
       my $sfd  = $self->{SFD};

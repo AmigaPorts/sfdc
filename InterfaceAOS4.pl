@@ -15,7 +15,6 @@ BEGIN {
     }
 
     # Helper functions
-    
     sub define_interface_data {
       my $self     = shift;
       my $sfd      = $self->{SFD};
@@ -58,14 +57,13 @@ BEGIN {
       if ($prototype->{type} eq 'varargs' &&
           ($prototype->{subtype} eq 'tagcall' ||
            $prototype->{subtype} eq 'methodcall')) {
-          # Nuke second last argument (=first varargs argument) 
+          # Nuke second last argument (=first varargs argument)
           # or it will be placed in a register!
           for my $i (0 .. $#{@{$prototype->{args}}}) {
             if ($i != $prototype->{numargs} - 2 ) {
                 print ", $prototype->{args}[$i]";
           }
       }
-          
       }
       else {
           if ($prototype->{numargs} != 0) {

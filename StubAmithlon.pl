@@ -16,7 +16,6 @@ BEGIN {
 
     sub header {
       my $self = shift;
-      
       $self->SUPER::header (@_);
 
       print "#ifndef __INLINE_MACROS_H\n";
@@ -54,7 +53,6 @@ BEGIN {
       print "#endif /* __INLINE_MACROS_H */\n";
       print "\n";
     }
-    
     sub function_start {
       my $self      = shift;
       my %params    = @_;
@@ -96,14 +94,11 @@ BEGIN {
           $self->SUPER::function_arg (@_);
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-
-      
       if ($$prototype{'type'} eq 'function') {
           if (!$prototype->{nb}) {
             print "  __asm(\"movl %1,%0\":\"=m\"(_regs.a6)" .
@@ -111,13 +106,11 @@ BEGIN {
           }
 
           print "  ";
-          
           if (!$prototype->{nr}) {
             print "_res = ($prototype->{return}) ";
           }
 
           print "_CallLib68k(&_regs,-$prototype->{bias});\n";
-          
           if (!$prototype->{nr}) {
             print "  return _res;\n";
           }

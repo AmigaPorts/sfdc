@@ -38,7 +38,6 @@ BEGIN {
           print "_LVO$prototype->{funcname}     EQU   -$prototype->{bias}\n";
       }
     }
-    
     sub footer {
       my $self = shift;
       my $sfd  = $self->{SFD};

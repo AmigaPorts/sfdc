@@ -32,7 +32,7 @@ BEGIN {
       print "#endif /* __HAVE_IPTR_ATTR__ */\n";
       print "#endif /* _SFDC_VARARG_DEFINED */\n";
       print "\n";
- 
+
       print "#ifndef __PPCINLINE_MACROS_H\n";
       print "#include <ppcinline/macros.h>\n";
       print "#endif /* !__PPCINLINE_MACROS_H */\n";
@@ -80,7 +80,6 @@ BEGIN {
       {
         $self->{FUNCRETTYPE} = $return;
       }
-          
           printf "      LP%d%s%s%s%s%s(0x%x, ", $$prototype{'numargs'},
           $prototype->{nr} ? "NR" : "",
           $prototype->{nb} ? "NB" : "",
@@ -91,7 +90,7 @@ BEGIN {
 
       if ($self->{FUNCRETTYPE})
       {
-        print "__fpr, "; 
+        print "__fpr, ";
       }
           elsif (!$prototype->{nr}) {
             print "$$prototype{'return'}, ";
@@ -115,11 +114,9 @@ BEGIN {
           my $argreg    = $params{'argreg'};
       my $fpidx     = 0;
       my $fpfound   = 0;
-          
           if ($argreg eq 'a4' || $argreg eq 'a5') {
             $argreg = 'd7';
           }
-          
       for my $atype (@{$self->{FUNCARGTYPE}}) {
         $fpidx++;
         if ($atype eq $argtype) {
@@ -176,7 +173,6 @@ BEGIN {
 
         print ", $fr";
       }
-          
           print ", 0, 0, 0, 0, 0, 0)\n";
       }
       else {

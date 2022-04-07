@@ -47,8 +47,6 @@ generating gatestubs or gateproto files.
 =item B<--help>
 
 Show the full help message and exit.
-
-    
 =item B<--libarg>
 
 Specifies where to place the library base argument when generating
@@ -107,8 +105,6 @@ Generate a list of function names suitable for inclusion in a library
 function table. By defining the preprocessor symbol
 B<__SFDC_FUNCTABLE_M68K__>, the list of functions will be modified so
 it's suitable for AmigaOS 4's m68k function table.
-
-    
 =item B<gateproto>
 
 Generate a prototype header file for library gate stubs. Useful for
@@ -141,9 +137,7 @@ Generate an assembler LVO include file.
 Generate a header file containing F<gcc> specific preprocessor macros,
 similar to F<fd2inline>'s B<--new> switch. For AROS targets, it
 generates a file suitable to be placed in the F<Include/defines/>
-directory. 
-
-    
+directory.
 =item B<proto>
 
 Generate header file to be placed in F<Include/proto/> that includes
@@ -171,7 +165,7 @@ Just loads and parses the SFD file. This is the default.
 =back
 
 
-=item B<--output> 
+=item B<--output>
 
 Specifies where the result will be stored. The following escape
 sequencies are allowed in the file name. If the sequence B<%f> is

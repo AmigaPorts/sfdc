@@ -34,7 +34,6 @@ BEGIN {
             print STDERR "$$prototype{'funcname'} uses both a4 and a5 " .
                 "for arguments. This is not going to work.\n";
           }
-      
       @{$self->{FUNCARGTYPE}} = ();
           for my $argtype (@{$$prototype{'argtypes'}}) {
             if ($argtype =~ /\(\*+\)/) {
@@ -48,7 +47,6 @@ BEGIN {
       {
         $self->{FUNCRETTYPE} = $return;
       }
-          
           printf "      LP%d%s%s%s%s%s%s%s(0x%x, ", $$prototype{'numargs'},
           $prototype->{nr} ? "NR" : "",
           $prototype->{nb} ? "NB" : "",
@@ -60,7 +58,7 @@ BEGIN {
 
       if ($self->{FUNCRETTYPE})
       {
-        print "__fpr, "; 
+        print "__fpr, ";
       }
           elsif (!$prototype->{nr}) {
             print "$$prototype{'return'}, ";
@@ -85,11 +83,9 @@ BEGIN {
           my $argreg    = $params{'argreg'};
       my $fpidx     = 0;
       my $fpfound   = 0;
-          
           if ($argreg eq 'a4' || $argreg eq 'a5') {
             $argreg = 'd7';
           }
-          
       for my $atype (@{$self->{FUNCARGTYPE}}) {
         $fpidx++;
         if ($atype eq $argtype) {
@@ -141,7 +137,6 @@ BEGIN {
 
         print ", $fr";
       }
-          
           print ")\n";
       }
       else {

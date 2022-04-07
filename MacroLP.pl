@@ -19,7 +19,6 @@ BEGIN {
       my $sfd  = $self->{SFD};
 
       $self->SUPER::header (@_);
-      
       print "#ifndef __INLINE_MACROS_H\n";
       print "#include <inline/macros.h>\n";
       print "#endif /* !__INLINE_MACROS_H */\n";
@@ -32,7 +31,6 @@ BEGIN {
           print "\n";
       }
     }
-    
     sub function_start {
       my $self      = shift;
       my %params    = @_;
@@ -72,14 +70,11 @@ BEGIN {
           $self->SUPER::function_arg (@_);
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-
-      
       if ($$prototype{'type'} eq 'function') {
 
           if (!$prototype->{nb}) {

@@ -25,7 +25,6 @@ BEGIN {
 
       $v =~ s/^\$[I]d: .*? ([0-9.]+).*/$1/;
       $d =~ s,^\$[I]d: .*? [0-9.]+ (\d{4})/(\d{2})/(\d{2}).*,($3.$2.$1),;
-            
       print "/* Automatically generated header (sfdc SFDC_VERSION)! Do not edit! */\n";
       print "\n";
       print "#ifndef CLIB_$$sfd{'BASENAME'}_PROTOS_H\n";
@@ -63,34 +62,28 @@ BEGIN {
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-      
       # Don't process private functions
       if ($prototype->{private}) {
           return;
       }
-      
       if ($self->{VERSION} != $$prototype{'version'}) {
           $self->{VERSION} = $$prototype{'version'};
 
           print "\n";
           print "/*--- functions in V$self->{VERSION} or higher ---*/\n";
       }
-      
       if ($$prototype{'comment'} ne '') {
           my $comment = $$prototype{'comment'};
 
           $comment =~ s,^(\s?)(.*)$,/*$1$2$1*/,mg;
-            
           print "\n";
           print "$comment\n";
       }
-      
       my $args = join (', ',@{$$prototype{'args'}});
 
       if ($args eq '') {
           $args = "void";
       }
-      
       print "$$prototype{'return'} $$prototype{'funcname'}($args)";
 
       if ($$classes{'target'} eq 'morphos' &&
@@ -103,7 +96,6 @@ BEGIN {
           $prototype->{type} eq 'varargs') {
           print " __attribute__((linearvarargs))";
       }
-      
       print ";\n";
     }
 

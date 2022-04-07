@@ -53,14 +53,11 @@ BEGIN {
           $self->SUPER::function_arg (@_);
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-
-      
       if ($prototype->{type} eq 'function' ||
           $prototype->{type} eq 'varargs') {
           print ")\n";

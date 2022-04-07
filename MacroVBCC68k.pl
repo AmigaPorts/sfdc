@@ -13,24 +13,19 @@ BEGIN {
       bless ($self, $class);
       return $self;
     }
-    
     sub function {
       my $self  = shift;
       my %params = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-      
       my $regswap = "";
-      
       my $function_start = $$prototype{'return'} ." __" . $$prototype{'funcname'} . "(__reg(\"a6\") struct Library * ";
       my $function = $function_start;
-      
       if ($$prototype{private})
       {
         return;
       }
       # Handle VarArgs functions
-      
       if ($$prototype{'type'} eq 'varargs')
       {
         print "#if !defined(NO_INLINE_STDARG) && (__STDC__ == 1L) && (__STDC_VERSION__ >= 199901L)\n";
@@ -55,7 +50,6 @@ BEGIN {
         }
         $function .= sprintf ") = \"%s\\tjsr\\t-%ld(a6)%s\";",$stackpush,$$prototype{"bias"},$stackpop;
         print "$function\n";
-    
 
         print "#define $$prototype{'funcname'}(";
         for(my $arg = 0; $arg < $last_stdarg; $arg++)
@@ -67,28 +61,21 @@ BEGIN {
           }
         }
         print "...) __$$prototype{'funcname'}(" . $sfd->{BaseName} . "Base";
-      
         for(my $arg = 0; $arg < $last_stdarg; $arg++)
         {
           print ", ";
           print "(" . $$prototype{'argnames'}[$arg] . ")";
         }
         print ", __VA_ARGS__)\n";
-      
-        print "#endif\n\n"; 
+        print "#endif\n\n";
         return;
       }
-      
-            
       for(my $arg = 0; $arg < $$prototype{"numargs"}; $arg++)
       {
         my $reg = $$prototype{'regs'}[$arg];
         my $type = $$prototype{'argtypes'}[$arg];
-        
         # make sure registers are in dn/dn format (assumes they either occur in dn-dn or dn/dn depending on inopu sfd file formattng
-        
         $reg =~ s/-/\//g;
-        
         # check for some possible 64bit types and fix registers if possible
         # first verify that it's not pointer the regsister isn;t an adress register and a register pair
         # isn't already defined.
@@ -143,25 +130,20 @@ BEGIN {
         }
         $function .= ", __reg(\"" . $reg . "\") " . $$prototype{'args'}[$arg] . " ";
       }
-      
-           
       $function .= sprintf ") = \"%s\\tjsr\\t-%ld(a6)\";",$regswap,$$prototype{"bias"};
-      
       # check for return type of pointer to function
-      
       if ($function =~ m/^(.*)\(\*\)\((.*?)\)(.*);$/)
       {
         my $type = $1;
         my $returnfunc = $2;
         my $func = $3;
         my ($funcbody,$funcasm) = split("=",$func);
-        print "$type (*$funcbody)($returnfunc) = $funcasm;\n" 
+        print "$type (*$funcbody)($returnfunc) = $funcasm;\n"
       }
       else
       {
         print "$function\n";
       }
-      
       print "#define $$prototype{'funcname'}(";
       for(my $arg = 0; $arg < $$prototype{"numargs"}; $arg++)
       {
@@ -172,7 +154,6 @@ BEGIN {
         }
       }
       print ") __$$prototype{'funcname'}(" . $sfd->{BaseName} . "Base";
-      
       for(my $arg = 0; $arg < $$prototype{"numargs"}; $arg++)
       {
         print ", ";

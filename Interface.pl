@@ -64,7 +64,6 @@ BEGIN {
 
       $self->output_function(@_);
     }
-    
     sub footer {
       my $self = shift;
       my $sfd  = $self->{SFD};
@@ -76,7 +75,6 @@ BEGIN {
 
 
     # Helper functions
-    
     sub define_interface_data {
       my $self     = shift;
       my $sfd      = $self->{SFD};

@@ -16,7 +16,6 @@ BEGIN {
 
     sub header {
       my $self = shift;
-      
       $self->SUPER::header (@_);
 
       if ($sdi eq 0) {
@@ -57,7 +56,6 @@ BEGIN {
       if ($sdi eq 0) {
         print "$rettype_prefix ";
         print "$gateprefix$prototype->{funcname}(void)$rettype_postfix";
-        
       }
       else {
         if ($prototype->{return} =~ /\(\*+\)/) {
@@ -111,7 +109,6 @@ BEGIN {
           }
       }
     }
-    
     sub function_end {
       my $self      = shift;
 
@@ -124,7 +121,6 @@ BEGIN {
             if ($libarg ne 'none' && !$prototype->{nb}) {
               print "  $sfd->{basetype} _base = ($sfd->{basetype})"."REG_A6;\n";
             }
-            
             print "  return $libprefix$prototype->{funcname}(";
 
             if ($libarg eq 'first' && !$prototype->{nb}) {
@@ -133,13 +129,11 @@ BEGIN {
             }
 
             print join (', ', @{$prototype->{___argnames}});
-      
             if ($libarg eq 'last' && !$prototype->{nb}) {
               print $prototype->{numargs} > 0 ? ", " : "";
               print "_base";
             }
           }
-      
           print ");\n";
           print "}\n";
       }

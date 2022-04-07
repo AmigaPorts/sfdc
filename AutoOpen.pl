@@ -28,8 +28,15 @@ BEGIN {
           print "#if defined (__libnix__)\n";
           print "\n";
           print "#include <stabs.h>\n";
+          print "#ifdef __baserel__\n";
+          print "void* $sfd->{base} = 0;\n";
+          print "void ** __get$sfd->{base}() { return &$sfd->{base}; }\n";
+          print "static void * __init[2] = { __get$sfd->{base}, \"$sfd->{libname}\"};\n";
+          print "ADD2LIB(__init);\n";
+          print "#else\n";
           print "void* $sfd->{base}" . "[2] = { 0, \"$sfd->{libname}\" };\n";
           print "ADD2LIB($sfd->{base});\n";
+          print "#endif\n";
           print "\n";
           print "#elif defined (__AMIGAOS4__)\n";
           print "\n";
@@ -38,7 +45,6 @@ BEGIN {
           foreach my $inc (@{$$sfd{'includes'}}) {
             print "#include $inc\n";
           }
-          
           foreach my $td (@{$$sfd{'typedefs'}}) {
             print "typedef $td;\n";
           }
@@ -74,8 +80,6 @@ BEGIN {
           print "\n";
           print "#endif\n";
       }
-
-      
       print "\n";
       print "#ifdef __cplusplus\n";
       print "}\n";

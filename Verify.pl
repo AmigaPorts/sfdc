@@ -65,7 +65,6 @@ BEGIN {
 
           die if $self->{ERRORS};
       }
-      
       printf " $self->{CNT} function%s verified\n", $self->{CNT} == 1 ? "" : "s";
     }
 }

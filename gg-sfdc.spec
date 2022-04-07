@@ -1,5 +1,5 @@
 %define Name sfdc
-%define Version 1.11c
+%define Version 1.11d
 
 Name        	: gg-%{Name}
 Version     	: %{Version}
@@ -73,7 +73,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_mandir}/man1/*
 
 %changelog
-* Mon Sep 12 2005 Martin Blom <martin@blom.org> - 
+* Mon Sep 12 2005 Martin Blom <martin@blom.org> -
 - Updated to 1.4.
 
 * Fri Nov 12 2004 Martin Blom <martin@blom.org>

@@ -57,10 +57,8 @@ BEGIN {
             my $comment = $$prototype{'comment'};
 
             $comment =~ s/^/\*/m;
-            
             print "$comment\n";
           }
-          
           print "$$prototype{'funcname'}(";
           print join (',', @{$$prototype{'argnames'}});
           print ")(";
@@ -75,13 +73,10 @@ BEGIN {
           else {
             die;
           }
-          
           print ")\n";
-      
           $self->{BIAS} += 6;
       }
     }
-    
     sub footer {
       my $self = shift;
 

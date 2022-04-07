@@ -52,7 +52,6 @@ BEGIN {
       if ($prototype->{private}) {
           return;
       }
-      
       if ($$prototype{'type'} eq 'varargs') {
           if ($prototype->{subtype} eq 'tagcall') {
             print "#ifndef NO_INLINE_STDARG\n";
@@ -61,7 +60,6 @@ BEGIN {
             print "#ifndef NO_INLINE_VARARGS\n";
           }
       }
-      
       $self->function_define (prototype => $prototype);
       $self->function_start (prototype => $prototype);
       for my $i (0 .. $$prototype{'numargs'} - 1 ) {
@@ -94,7 +92,6 @@ BEGIN {
 
 
     # Helper functions
-    
     sub function_define {
       my $self     = shift;
       my %params   = @_;
@@ -118,7 +115,6 @@ BEGIN {
             $prototype->{subtype} eq 'methodcall') {
             my $first_stdargnum = $$prototype{'numargs'} - 2;
             my $first_stdarg = $$prototype{'___argnames'}[$first_stdargnum];
-          
             printf "    ({_sfdc_vararg _%s[] = { $first_stdarg, __VA_ARGS__ }; ",
             $prototype->{subtype} eq 'tagcall' ? "tags" : "message";
             print "$$prototype{'real_funcname'}(";
@@ -142,7 +138,6 @@ BEGIN {
                 $argtypes = "$sfd->{basetype}, $argtypes";
             }
           }
-          
           print " ({$$prototype{'return'} (*_func) ($argtypes) = \\\n";
           print "     ($$prototype{'return'} (*) ($argtypes))\\\n";
 
@@ -231,14 +226,11 @@ BEGIN {
           die;
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
       my $sfd       = $self->{SFD};
-
-      
       print "); })\n";
     }
 }

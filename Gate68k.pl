@@ -40,7 +40,6 @@ BEGIN {
 
       print "     $prototype->{___args}[$argnum] __asm(\"$argreg\")";
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
@@ -78,7 +77,6 @@ BEGIN {
             print $prototype->{numargs} > 0 ? ", " : "";
             print "_base";
           }
-      
           print ");\n";
           print "}\n";
       }

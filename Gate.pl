@@ -73,7 +73,6 @@ BEGIN {
                              argnum    => $i );
           }
           $self->function_end (prototype => $prototype);
-          
           print "\n";
       }
       elsif ($prototype->{type} eq 'cfunction') {
@@ -123,7 +122,6 @@ BEGIN {
 
 
     # Helper functions
-    
     sub function_proto {
       my $self     = shift;
       my %params   = @_;
@@ -150,7 +148,6 @@ BEGIN {
       if (!$self->{LIBPROTO}) {
           print_gateproto ($sfd, $prototype);
       }
-      
       if ($self->{PROTO}) {
           print ";\n";
       }
@@ -181,17 +178,14 @@ BEGIN {
 
     sub function_end {
       my $self      = shift;
-      
       if (!$self->{PROTO} && !$self->{LIBPROTO}) {
           my %params    = @_;
           my $prototype = $params{'prototype'};
           my $sfd       = $self->{SFD};
-          
           if ($libarg eq 'last' && !$prototype->{nb}) {
             print $prototype->{numargs} > 0 ? ", " : "";
             print "_base";
           }
-          
           print ");\n";
           print "}\n";
       }
@@ -201,7 +195,6 @@ BEGIN {
     sub print_gateproto {
       my $sfd       = shift;
       my $prototype = shift;
-      
       print "$prototype->{return}\n";
       print "$gateprefix$prototype->{funcname}(";
 
@@ -209,7 +202,6 @@ BEGIN {
           print "$sfd->{basetype} _base";
           print $prototype->{numargs} > 0 ? ", " : "";
       }
-      
       print join (', ', @{$prototype->{___args}});
 
       if ($libarg eq 'last' && !$prototype->{nb}) {
@@ -227,7 +219,6 @@ BEGIN {
     sub print_libproto {
       my $sfd       = shift;
       my $prototype = shift;
-      
       my $rettype_prefix = $prototype->{return};
       my $rettype_postfix = "";
       if ($prototype->{return} =~ /(.*\(\*+)(\).*)/) {
@@ -265,7 +256,6 @@ BEGIN {
       if ($libarg eq 'none' && $prototype->{numargs} == 0) {
           print "void";
       }
-      
       print ")" . $rettype_postfix;
     }
 }

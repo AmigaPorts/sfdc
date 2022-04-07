@@ -16,7 +16,6 @@ BEGIN {
 
     sub header {
       my $self = shift;
-      
       $self->SUPER::header (@_);
 
       print "\n";
@@ -34,7 +33,6 @@ BEGIN {
 
           if ($prototype->{subtype} ne 'tagcall') {
             # We have to add the attribute to ourself first
-          
             $self->special_function_proto (@_);
             print " __attribute__((varargs68k));\n";
             print "\n";
@@ -45,7 +43,6 @@ BEGIN {
           $self->SUPER::function_proto (@_);
       }
     }
-    
     sub function_start {
       my $self      = shift;
       my %params    = @_;
@@ -71,7 +68,6 @@ BEGIN {
                 # methodcall: first vararg is removed
                 $na = $prototype->{numargs} - 3;
             }
-            
             print "\n";
             print "{\n";
             print "  va_list _va;\n";
@@ -80,7 +76,6 @@ BEGIN {
           }
           else {
             # Shamelessly stolen from fd2inline ...
-            
             # number of regs that contain varargs
             my $n = 9 - $prototype->{numregs};
 
@@ -111,14 +106,12 @@ BEGIN {
 
             # If n is odd, one tag is split between regs and stack.
             # Copy its ti_Data together with the ti_Tag.
-          
             if ($d != 0) {
                 # read ti_Data
                 printf "      lwz   0,%d(1)\n", $local + 8;
             }
 
             # Save the registers
-          
             for my $count ($prototype->{numregs} .. 8) {
                 printf "      stw   %d,%d(1)\n",
                 $count + 2,
@@ -138,7 +131,6 @@ BEGIN {
             printf "    stw   0,%d(1)\n", $taglist + $n * 4 + $d + 4;
 
             # vararg_reg = &saved regs
-          
             printf "    addi  %d,1,%d\n",
             $prototype->{numregs} + 2, $taglist;
             print "     bl    $prototype->{real_funcname}\n";
@@ -181,7 +173,6 @@ BEGIN {
           $self->SUPER::function_arg (@_);
       }
     }
-    
     sub function_end {
       my $self      = shift;
       my %params    = @_;
@@ -194,7 +185,6 @@ BEGIN {
           }
 
           print "  ";
-          
           if (!$prototype->{nr}) {
             print "return ($prototype->{return}) ";
           }
@@ -262,7 +252,6 @@ BEGIN {
           print ");\n";
           print "\n";
       }
-      
       print "$$prototype{'return'}\n";
       print "$$prototype{'funcname'}(";
       if (!$prototype->{nb}) {
@@ -285,6 +274,5 @@ BEGIN {
 
       print join (', ', @newargs);
       print ")";
-      
     }
 }

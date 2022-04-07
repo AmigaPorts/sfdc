@@ -41,7 +41,6 @@ BEGIN {
           print "  (CONST_APTR) _sfdc_func($gateprefix$prototype->{funcname}),\n";
       }
     }
-    
     sub footer {
       my $self = shift;
       my $sfd  = $self->{SFD};
