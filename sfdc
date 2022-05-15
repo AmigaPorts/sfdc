@@ -1039,7 +1039,7 @@ BEGIN {
           print "#ifdef __baserel__\n";
           print "void* $sfd->{base} = 0;\n";
           print "void ** __get$sfd->{base}() { return &$sfd->{base}; }\n";
-          print "static void * __init[2] = { __get$sfd->{base}, \"$sfd->{libname}\"};\n";
+          print "static void * const __init[2] = { __get$sfd->{base}, \"$sfd->{libname}\"};\n";
           print "ADD2LIB(__init);\n";
           print "#else\n";
           print "void* $sfd->{base}" . "[2] = { 0, \"$sfd->{libname}\" };\n";
