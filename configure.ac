@@ -8,7 +8,7 @@ AC_INIT(sfdc, [project_version], martin@blom.org)
 
 # Information on the package
 VERSION=[project_version]
-DATE=2022-04-07
+DATE=2022-10-08
 AC_SUBST(VERSION)
 AC_SUBST(DATE)
 

@@ -200,7 +200,7 @@ GetOptions ('addvectors=s' => \$addvectors,
           'version|v'    => \$version) or exit 10;
 
 if ($version) {
-    print STDERR "sfdc 1.11d (2022-04-07)\n";
+    print STDERR "sfdc 1.11e (2022-10-08)\n";
     print STDERR "Copyright (C) 2003-2016 Martin Blom <martin\@blom.org>\n";
     print STDERR "This is free software; " .
       "see the source for copying conditions.\n";
@@ -1026,7 +1026,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       if ($sfd->{base} ne '') {
           print "#ifdef __cplusplus\n";
@@ -1035,16 +1035,8 @@ BEGIN {
           print "\n";
           print "#if defined (__libnix__)\n";
           print "\n";
-          print "#include <stabs.h>\n";
-          print "#ifdef __baserel__\n";
-          print "void* $sfd->{base} = 0;\n";
-          print "void ** __get$sfd->{base}() { return &$sfd->{base}; }\n";
-          print "static void * const __init[2] = { __get$sfd->{base}, \"$sfd->{libname}\"};\n";
-          print "ADD2LIB(__init);\n";
-          print "#else\n";
+          print "__attribute__((section(\".list___LIB_LIST__\")))\n";
           print "void* $sfd->{base}" . "[2] = { 0, \"$sfd->{libname}\" };\n";
-          print "ADD2LIB($sfd->{base});\n";
-          print "#endif\n";
           print "\n";
           print "#elif defined (__AMIGAOS4__)\n";
           print "\n";
@@ -1129,7 +1121,7 @@ BEGIN {
 
       $v =~ s/^\$[I]d: .*? ([0-9.]+).*/$1/;
       $d =~ s,^\$[I]d: .*? [0-9.]+ (\d{4})/(\d{2})/(\d{2}).*,($3.$2.$1),;
-      print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef CLIB_$$sfd{'BASENAME'}_PROTOS_H\n";
       print "#define CLIB_$$sfd{'BASENAME'}_PROTOS_H\n";
@@ -1336,7 +1328,7 @@ BEGIN {
       my $sfd  = $self->{SFD};
 
       print "* \"$$sfd{'libname'}\"\n";
-      print "* Automatically generated FD (sfdc 1.11d)! Do not edit!\n";
+      print "* Automatically generated FD (sfdc 1.11e)! Do not edit!\n";
       print "##base _$$sfd{'base'}\n";
       $self->{BIAS}    = -1;
       $self->{PRIVATE} = -1;
@@ -1417,7 +1409,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated function table (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated function table (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifdef __SFDC_FUNCTABLE_M68K__\n";
       print "# define _sfdc_func(f) &m68k ## f\n";
@@ -2296,19 +2288,19 @@ BEGIN {
       my $sfd  = $self->{SFD};
 
       if ($self->{PROTO}) {
-          print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+          print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
           print "\n";
           print "#ifndef _GATEPROTO_$$sfd{'BASENAME'}_H\n";
           print "#define _GATEPROTO_$$sfd{'BASENAME'}_H\n";
       }
       elsif ($self->{LIBPROTO}) {
-          print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+          print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
           print "\n";
           print "#ifndef _LIBPROTO_$$sfd{'BASENAME'}_H\n";
           print "#define _LIBPROTO_$$sfd{'BASENAME'}_H\n";
       }
       else {
-          print "/* Automatically generated gatestubs (sfdc 1.11d)! Do not edit! */\n";
+          print "/* Automatically generated gatestubs (sfdc 1.11e)! Do not edit! */\n";
       }
       print "\n";
 
@@ -2632,7 +2624,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated function table (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated function table (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef $sfd->{'BASENAME'}_INTERFACE_DEF_H\n";
       print "#define $sfd->{'BASENAME'}_INTERFACE_DEF_H\n";
@@ -2747,7 +2739,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "* Automatically generated header (sfdc 1.11d)! Do not edit!\n";
+      print "* Automatically generated header (sfdc 1.11e)! Do not edit!\n";
       print "     IFND  LVO_$sfd->{BASENAME}_LIB_I\n";
       print "LVO_$sfd->{BASENAME}_LIB_I   SET   1\n";
       print "\n";
@@ -3199,7 +3191,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef _PPCINLINE_$$sfd{'BASENAME'}_H\n";
       print "#define _PPCINLINE_$$sfd{'BASENAME'}_H\n";
@@ -3389,7 +3381,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef _INLINE_$$sfd{'BASENAME'}_H\n";
       print "#define _INLINE_$$sfd{'BASENAME'}_H\n";
@@ -3787,7 +3779,7 @@ BEGIN {
       my $BaseName  = $$sfd{'BaseName'};
       my $basetype  = $$sfd{'basetype'};
 
-      print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef PROTO_${BASENAME}_H\n";
       print "#define PROTO_${BASENAME}_H\n";
@@ -3863,7 +3855,7 @@ BEGIN {
       $v =~ s/^\$[I]d: .*? ([0-9.]+).*/$1/;
       $d =~ s,^\$[I]d: .*? [0-9.]+ (\d{4})/(\d{2})/(\d{2}).*,($3.$2.$1),;
 
-      print "/* Automatically generated header (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "#ifndef PRAGMAS_$sfd->{BASENAME}_PRAGMAS_H\n";
       print "#define PRAGMAS_$sfd->{BASENAME}_PRAGMAS_H\n";
       print "\n";
@@ -4910,7 +4902,7 @@ BEGIN {
 
       $self->{NEWFILE} = 1;
 
-      print "/* Automatically generated stubs (sfdc 1.11d)! Do not edit! */\n";
+      print "/* Automatically generated stubs (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
 
       foreach my $inc (@{$$sfd{'includes'}}) {
