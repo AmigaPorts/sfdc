@@ -27,7 +27,7 @@ BEGIN {
           print "\n";
           print "#if defined (__libnix__)\n";
           print "\n";
-          print "__attribute__((section(\".list___LIB_LIST__\")))\n";
+          print "__attribute__((section(\".dlist___LIB_LIST__\")))\n";
           print "void* $sfd->{base}" . "[2] = { 0, \"$sfd->{libname}\" };\n";
           print "\n";
           print "#elif defined (__AMIGAOS4__)\n";
