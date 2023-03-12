@@ -231,6 +231,7 @@ BEGIN {
 
       if ($libarg eq 'first' && !$prototype->{nb}) {
           print "$sfd->{basetype} _base";
+          print $prototype->{numargs} > 0 ? ", " : "";
       }
 
       for my $i (0 .. $prototype->{numargs} - 1 ) {
@@ -245,7 +246,8 @@ BEGIN {
           $argdef =~ s/\(\*+\)/\(\*$argname\)/g;
         }
 
-        print ", $argdef";
+        print $i > 0 ? ", " : "";
+        print "$argdef";
       }
 
       if ($libarg eq 'last' && !$prototype->{nb}) {
