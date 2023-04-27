@@ -3,6 +3,8 @@
 #     sfdc - Compile SFD files into someting useful
 #     Copyright (C) 2003-2005 Martin Blom <martin@blom.org>
 #
+#     Patched by Stefan "Bebbo" Franke <stefan@franke.ms>.
+#
 #     This program is free software; you can redistribute it and/or
 #     modify it under the terms of the GNU General Public License
 #     as published by the Free Software Foundation; either version 2

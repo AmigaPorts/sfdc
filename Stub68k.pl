@@ -70,7 +70,12 @@ BEGIN {
           my $regs      = join(',', @{$$prototype{'regs'}});
           my $a4        = $regs =~ /a4/;
           my $a5        = $regs =~ /a5/;
-
+          my %rmap = ();
+          
+          for my $i (0 .. $$prototype{'numargs'} - 1 ) {
+            $rmap{$$prototype{'regs'}[$i]} = 1;
+          }
+          
           if ($a4 && $a5 && !$quiet) {
             print STDERR "$$prototype{'funcname'} uses both a4 and a5 " .
                 "for arguments. This is not going to work.\n";
@@ -102,7 +107,20 @@ BEGIN {
           }
 
           print "\n";
-          print '  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");';
+          print '  :';
+          if (not exists $rmap{'d0'} or !$prototype->{nr}) {
+          	print ' "d0",';
+          }
+          if (not exists $rmap{'d1'}) {
+          	print ' "d1",';
+          }
+          if (not exists $rmap{'a0'}) {
+          	print ' "a0",';
+          }
+          if (not exists $rmap{'a1'}) {
+          	print ' "a1",';
+          }
+          print ' "fp0", "fp1", "cc", "memory");';
           print "\n";
           if (!$prototype->{nr}) {
             print "  return _res;\n";
