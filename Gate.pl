@@ -193,27 +193,30 @@ BEGIN {
 
 
     sub print_gateproto {
-      my $sfd       = shift;
-      my $prototype = shift;
-      print "$prototype->{return}\n";
-      print "$gateprefix$prototype->{funcname}(";
+        my $sfd       = shift;
+        my $prototype = shift;
+        print "$prototype->{return}\n";
+        print "$gateprefix$prototype->{funcname}(";
 
-      if ($libarg eq 'first' && !$prototype->{nb}) {
-          print "$sfd->{basetype} _base";
-          print $prototype->{numargs} > 0 ? ", " : "";
-      }
-      print join (', ', @{$prototype->{___args}});
+        my @args;
 
-      if ($libarg eq 'last' && !$prototype->{nb}) {
-          print $prototype->{numargs} > 0 ? ", " : "";
-          print "$sfd->{basetype} _base";
-      }
+        if ($libarg eq 'first' && !$prototype->{nb}) {
+            push @args, "$sfd->{basetype} _base";
+        }
 
-      if ($libarg eq 'none' && $prototype->{numargs} == 0) {
-          print "void";
-      }
+        push @args, @{$prototype->{___args}} if $prototype->{___args};
 
-      print ")";
+        if ($libarg eq 'last' && !$prototype->{nb}) {
+            push @args, "$sfd->{basetype} _base";
+        }
+
+        if ($libarg eq 'none' && $prototype->{numargs} == 0) {
+            push @args, "void";
+        }
+
+        print join(', ', @args);
+
+        print ")";
     }
 
     sub print_libproto {
