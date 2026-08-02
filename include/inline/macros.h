@@ -23,6 +23,1172 @@
 #include <inline/stubs.h>
 #endif
 
+#if defined(__GNUC__) && __GNUC__ >= 16
+
+/*
+   Definitions using hard register constraints (gcc 16+, requires -mlra)
+   instead of local register variables.
+
+   The GCC manual warns that a local register variable with a
+   const-qualified type may be substituted with its initializer inside
+   the asm, and gcc 13 and later actually do it at -O1 and above: any
+   compile-time constant passed to a CONST-typed parameter (for example
+   BltPattern's CONST PLANEPTR mask) is then materialized in a
+   compiler-chosen register instead of the one named in __asm, and the
+   library call silently receives garbage. Hard register constraints
+   are the documented replacement and have no such hazard: the operand
+   is an expression, not a variable that can be folded away.
+
+   https://gcc.gnu.org/onlinedocs/gcc/Local-Register-Variables.html
+   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=126552
+*/
+
+#define LP0(offs, rt, name, bt, bn)                                                         \
+({                                                                                          \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{a6}" (_##name##_bn)                                                                  \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP0FR(offs, rt, name, bt, bn, fpr)                                                  \
+({                                                                                          \
+   typedef fpr;                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{a6}" (_##name##_bn)                                                                  \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP0NR(offs, name, bt, bn)                               \
+({                                                              \
+   void *_##name##_bn = (void *)(bn);                           \
+   int _d0, _d1;                                                \
+   int _a0, _a1;                                                \
+   __asm volatile ("jsr a6@(-"#offs":W)"                        \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{a6}" (_##name##_bn)                                      \
+   : "fp0", "fp1", "cc", "memory");                             \
+})
+
+#define LP1(offs, rt, name, t1, v1, r1, bt, bn)                                             \
+({                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)                                        \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP1FP(offs, rt, name, t1, v1, r1, bt, bn, fpt)                                      \
+({                                                                                          \
+   typedef fpt;                                                                             \
+   t1 _##name##_v1 = (v1);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)                                        \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP1FR(offs, rt, name, t1, v1, r1, bt, bn, fpr)                                      \
+({                                                                                          \
+   typedef fpr;                                                                             \
+   t1 _##name##_v1 = (v1);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)                                        \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP1FPFR(offs, rt, name, t1, v1, r1, bt, bn, fpt, fpr)                               \
+({                                                                                          \
+   typedef fpr;                                                                             \
+   t1 _##name##_v1 = (v1);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)                                        \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP1NR(offs, name, t1, v1, r1, bt, bn)                   \
+({                                                              \
+   t1 _##name##_v1 = (v1);                                      \
+   void *_##name##_bn = (void *)(bn);                           \
+   int _d0, _d1;                                                \
+   int _a0, _a1;                                                \
+   __asm volatile ("jsr a6@(-"#offs":W)"                        \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)            \
+   : "fp0", "fp1", "cc", "memory");                             \
+})
+
+#define LP1A5(offs, rt, name, t1, v1, r1, bt, bn)                                           \
+({                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("exg d7,a5\n\tjsr a6@(-"#offs":W)\n\texg d7,a5"                          \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)                                        \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP1NRA5(offs, name, t1, v1, r1, bt, bn)                    \
+({                                                                 \
+   t1 _##name##_v1 = (v1);                                         \
+   void *_##name##_bn = (void *)(bn);                              \
+   int _d0, _d1;                                                   \
+   int _a0, _a1;                                                   \
+   __asm volatile ("exg d7,a5\n\tjsr a6@(-"#offs":W)\n\texg d7,a5" \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)    \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)               \
+   : "fp0", "fp1", "cc", "memory");                                \
+})
+
+#define LP1A5FP(offs, rt, name, t1, v1, r1, bt, bn, fpt)                                    \
+({                                                                                          \
+   typedef fpt;                                                                             \
+   t1 _##name##_v1 = (v1);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("exg d7,a5\n\tjsr a6@(-"#offs":W)\n\texg d7,a5"                          \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)                                        \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP1NRFP(offs, name, t1, v1, r1, bt, bn, fpt)            \
+({                                                              \
+   typedef fpt;                                                 \
+   t1 _##name##_v1 = (v1);                                      \
+   void *_##name##_bn = (void *)(bn);                           \
+   int _d0, _d1;                                                \
+   int _a0, _a1;                                                \
+   __asm volatile ("jsr a6@(-"#offs":W)"                        \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{a6}" (_##name##_bn)            \
+   : "fp0", "fp1", "cc", "memory");                             \
+})
+
+#define LP2(offs, rt, name, t1, v1, r1, t2, v2, r2, bt, bn)                                 \
+({                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                  \
+   t2 _##name##_v2 = (v2);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{a6}" (_##name##_bn)              \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP2NR(offs, name, t1, v1, r1, t2, v2, r2, bt, bn)                      \
+({                                                                             \
+   t1 _##name##_v1 = (v1);                                                     \
+   t2 _##name##_v2 = (v2);                                                     \
+   void *_##name##_bn = (void *)(bn);                                          \
+   int _d0, _d1;                                                               \
+   int _a0, _a1;                                                               \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                       \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                            \
+})
+
+#define LP2NB(offs, rt, name, t1, v1, r1, t2, v2, r2)                                       \
+({                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                  \
+   t2 _##name##_v2 = (v2);                                                                  \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2)                                     \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP2FP(offs, rt, name, t1, v1, r1, t2, v2, r2, bt, bn, fpt)                          \
+({                                                                                          \
+   typedef fpt;                                                                             \
+   t1 _##name##_v1 = (v1);                                                                  \
+   t2 _##name##_v2 = (v2);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{a6}" (_##name##_bn)              \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP2FPFR(offs, rt, name, t1, v1, r1, t2, v2, r2, bt, bn, fpt, fpr)                   \
+({                                                                                          \
+   typedef fpr;                                                                             \
+   t1 _##name##_v1 = (v1);                                                                  \
+   t2 _##name##_v2 = (v2);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{a6}" (_##name##_bn)              \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP2NRFP(offs, name, t1, v1, r1, t2, v2, r2, bt, bn, fpt)               \
+({                                                                             \
+   typedef fpt;                                                                \
+   t1 _##name##_v1 = (v1);                                                     \
+   t2 _##name##_v2 = (v2);                                                     \
+   void *_##name##_bn = (void *)(bn);                                          \
+   int _d0, _d1;                                                               \
+   int _a0, _a1;                                                               \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                       \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                            \
+})
+
+#define LP3(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn)                                  \
+({                                                                                                       \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                   \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                      \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                        \
+})
+
+#define LP3NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn)                                    \
+({                                                                                                       \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   int _d0, _d1;                                                                                         \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                          \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+})
+
+#define LP3NB(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3)                           \
+({                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                  \
+   t2 _##name##_v2 = (v2);                                                                  \
+   t3 _##name##_v3 = (v3);                                                                  \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                    \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3)           \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP3NRNB(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3)                   \
+({                                                                                \
+   t1 _##name##_v1 = (v1);                                                        \
+   t2 _##name##_v2 = (v2);                                                        \
+   t3 _##name##_v3 = (v3);                                                        \
+   int _d0, _d1;                                                                  \
+   int _a0, _a1;                                                                  \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                          \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                   \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3) \
+   : "fp0", "fp1", "cc", "memory");                                               \
+})
+
+#define LP3FP(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn, fpt)                           \
+({                                                                                                       \
+   typedef fpt;                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                   \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                      \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                        \
+})
+
+#define LP3FP2(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn, fpt1, fpt2)                   \
+({                                                                                                       \
+   typedef fpt2;                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                   \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                      \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                        \
+})
+
+#define LP3FP3(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn, fpt1, fpt2, fpt3)             \
+({                                                                                                       \
+   typedef fpt3;                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                   \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                      \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                        \
+})
+
+#define LP3NRFP(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn, fpt)                             \
+({                                                                                                       \
+   typedef fpt;                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   int _d0, _d1;                                                                                         \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                          \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+})
+
+#define LP3NRFP2(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn, fpt1, fpt2)                     \
+({                                                                                                       \
+   typedef fpt2;                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   int _d0, _d1;                                                                                         \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                          \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+})
+
+#define LP3NRFP3(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn, fpt1, fpt2, fpt3)               \
+({                                                                                                       \
+   typedef fpt3;                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   int _d0, _d1;                                                                                         \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                 \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                          \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+})
+
+#define LP4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, bt, bn)                                                \
+({                                                                                                                                 \
+   t1 _##name##_v1 = (v1);                                                                                                         \
+   t2 _##name##_v2 = (v2);                                                                                                         \
+   t3 _##name##_v3 = (v3);                                                                                                         \
+   t4 _##name##_v4 = (v4);                                                                                                         \
+   void *_##name##_bn = (void *)(bn);                                                                                              \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                             \
+   int _a0, _a1;                                                                                                                   \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                           \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                        \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                  \
+})
+
+#define LP4NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, bt, bn)                                                  \
+({                                                                                                                                 \
+   t1 _##name##_v1 = (v1);                                                                                                         \
+   t2 _##name##_v2 = (v2);                                                                                                         \
+   t3 _##name##_v3 = (v3);                                                                                                         \
+   t4 _##name##_v4 = (v4);                                                                                                         \
+   void *_##name##_bn = (void *)(bn);                                                                                              \
+   int _d0, _d1;                                                                                                                   \
+   int _a0, _a1;                                                                                                                   \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                           \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                    \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                \
+})
+
+#define LP4NRFP3(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, bt, bn, fpt1, fpt2, fpt3)                             \
+({                                                                                                                                 \
+   typedef fpt3;                                                                                                                   \
+   t1 _##name##_v1 = (v1);                                                                                                         \
+   t2 _##name##_v2 = (v2);                                                                                                         \
+   t3 _##name##_v3 = (v3);                                                                                                         \
+   t4 _##name##_v4 = (v4);                                                                                                         \
+   void *_##name##_bn = (void *)(bn);                                                                                              \
+   int _d0, _d1;                                                                                                                   \
+   int _a0, _a1;                                                                                                                   \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                           \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                    \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                \
+})
+
+#define LP4FP(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, bt, bn, fpt)                                         \
+({                                                                                                                                 \
+   typedef fpt;                                                                                                                    \
+   t1 _##name##_v1 = (v1);                                                                                                         \
+   t2 _##name##_v2 = (v2);                                                                                                         \
+   t3 _##name##_v3 = (v3);                                                                                                         \
+   t4 _##name##_v4 = (v4);                                                                                                         \
+   void *_##name##_bn = (void *)(bn);                                                                                              \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                             \
+   int _a0, _a1;                                                                                                                   \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                           \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                        \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                  \
+})
+
+#define LP4FP4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, bt, bn, fpt1, fpt2, fpt3, fpt4)                     \
+({                                                                                                                                 \
+   typedef fpt4;                                                                                                                   \
+   t1 _##name##_v1 = (v1);                                                                                                         \
+   t2 _##name##_v2 = (v2);                                                                                                         \
+   t3 _##name##_v3 = (v3);                                                                                                         \
+   t4 _##name##_v4 = (v4);                                                                                                         \
+   void *_##name##_bn = (void *)(bn);                                                                                              \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                             \
+   int _a0, _a1;                                                                                                                   \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                           \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                        \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                  \
+})
+
+#define LP5(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn)                                                              \
+({                                                                                                                                                           \
+   t1 _##name##_v1 = (v1);                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                   \
+   void *_##name##_bn = (void *)(bn);                                                                                                                        \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                       \
+   int _a0, _a1;                                                                                                                                             \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                     \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                          \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                          \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                            \
+})
+
+#define LP5NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn)                                                                \
+({                                                                                                                                                           \
+   t1 _##name##_v1 = (v1);                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                   \
+   void *_##name##_bn = (void *)(bn);                                                                                                                        \
+   int _d0, _d1;                                                                                                                                             \
+   int _a0, _a1;                                                                                                                                             \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                     \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                          \
+})
+
+#define LP5NRA4(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn)                                                              \
+({                                                                                                                                                           \
+   t1 _##name##_v1 = (v1);                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                   \
+   void *_##name##_bn = (void *)(bn);                                                                                                                        \
+   int _d0, _d1;                                                                                                                                             \
+   int _a0, _a1;                                                                                                                                             \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                           \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                          \
+})
+
+#define LP5NRA5(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn)                                                              \
+({                                                                                                                                                           \
+   t1 _##name##_v1 = (v1);                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                   \
+   void *_##name##_bn = (void *)(bn);                                                                                                                        \
+   int _d0, _d1;                                                                                                                                             \
+   int _a0, _a1;                                                                                                                                             \
+   __asm volatile ("exg d7,a5\n\tjsr a6@(-"#offs":W)\n\texg d7,a5"                                                                                           \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                          \
+})
+
+#define LP5FP(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn, fpt)                                                       \
+({                                                                                                                                                           \
+   typedef fpt;                                                                                                                                              \
+   t1 _##name##_v1 = (v1);                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                   \
+   void *_##name##_bn = (void *)(bn);                                                                                                                        \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                       \
+   int _a0, _a1;                                                                                                                                             \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                     \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                          \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                          \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                            \
+})
+
+#define LP5A4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn)                                                            \
+({                                                                                                                                                           \
+   t1 _##name##_v1 = (v1);                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                   \
+   void *_##name##_bn = (void *)(bn);                                                                                                                        \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                       \
+   int _a0, _a1;                                                                                                                                             \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                           \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                          \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                          \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                            \
+})
+
+#define LP5A4FP(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn, fpt)                                                     \
+({                                                                                                                                                           \
+   typedef fpt;                                                                                                                                              \
+   t1 _##name##_v1 = (v1);                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                   \
+   void *_##name##_bn = (void *)(bn);                                                                                                                        \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                       \
+   int _a0, _a1;                                                                                                                                             \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                           \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                          \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                          \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                            \
+})
+
+#define LP6(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, bt, bn)                                                                            \
+({                                                                                                                                                                                     \
+   t1 _##name##_v1 = (v1);                                                                                                                                                             \
+   t2 _##name##_v2 = (v2);                                                                                                                                                             \
+   t3 _##name##_v3 = (v3);                                                                                                                                                             \
+   t4 _##name##_v4 = (v4);                                                                                                                                                             \
+   t5 _##name##_v5 = (v5);                                                                                                                                                             \
+   t6 _##name##_v6 = (v6);                                                                                                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                  \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                       \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                               \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                            \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                    \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                    \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                      \
+})
+
+#define LP6a(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, bt, bn)                                                                           \
+({                                                                                                                                                                                     \
+   t1 _##name##_v1 = (v1);                                                                                                                                                             \
+   t2 _##name##_v2 = (v2);                                                                                                                                                             \
+   t3 _##name##_v3 = (v3);                                                                                                                                                             \
+   t4 _##name##_v4 = (v4);                                                                                                                                                             \
+   t5 _##name##_v5 = (v5);                                                                                                                                                             \
+   t6 _##name##_v6 = (v6);                                                                                                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                  \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                       \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                               \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                            \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                    \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                    \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                      \
+})
+
+#define LP6NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, bt, bn)                                                                              \
+({                                                                                                                                                                                     \
+   t1 _##name##_v1 = (v1);                                                                                                                                                             \
+   t2 _##name##_v2 = (v2);                                                                                                                                                             \
+   t3 _##name##_v3 = (v3);                                                                                                                                                             \
+   t4 _##name##_v4 = (v4);                                                                                                                                                             \
+   t5 _##name##_v5 = (v5);                                                                                                                                                             \
+   t6 _##name##_v6 = (v6);                                                                                                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                  \
+   int _d0, _d1;                                                                                                                                                                       \
+   int _a0, _a1;                                                                                                                                                                       \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                               \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                        \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                    \
+})
+
+#define LP6A4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, bt, bn)                                                                          \
+({                                                                                                                                                                                     \
+   t1 _##name##_v1 = (v1);                                                                                                                                                             \
+   t2 _##name##_v2 = (v2);                                                                                                                                                             \
+   t3 _##name##_v3 = (v3);                                                                                                                                                             \
+   t4 _##name##_v4 = (v4);                                                                                                                                                             \
+   t5 _##name##_v5 = (v5);                                                                                                                                                             \
+   t6 _##name##_v6 = (v6);                                                                                                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                  \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                       \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                     \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                            \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                    \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                    \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                      \
+})
+
+#define LP6NRA4(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, bt, bn)                                                                            \
+({                                                                                                                                                                                     \
+   t1 _##name##_v1 = (v1);                                                                                                                                                             \
+   t2 _##name##_v2 = (v2);                                                                                                                                                             \
+   t3 _##name##_v3 = (v3);                                                                                                                                                             \
+   t4 _##name##_v4 = (v4);                                                                                                                                                             \
+   t5 _##name##_v5 = (v5);                                                                                                                                                             \
+   t6 _##name##_v6 = (v6);                                                                                                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                  \
+   int _d0, _d1;                                                                                                                                                                       \
+   int _a0, _a1;                                                                                                                                                                       \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                     \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                        \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                    \
+})
+
+#define LP6FP(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, bt, bn, fpt)                                                                     \
+({                                                                                                                                                                                     \
+   typedef fpt;                                                                                                                                                                        \
+   t1 _##name##_v1 = (v1);                                                                                                                                                             \
+   t2 _##name##_v2 = (v2);                                                                                                                                                             \
+   t3 _##name##_v3 = (v3);                                                                                                                                                             \
+   t4 _##name##_v4 = (v4);                                                                                                                                                             \
+   t5 _##name##_v5 = (v5);                                                                                                                                                             \
+   t6 _##name##_v6 = (v6);                                                                                                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                  \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                       \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                               \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                            \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                    \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                    \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                      \
+})
+
+#define LP6A4FP(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, bt, bn, fpt)                                                                   \
+({                                                                                                                                                                                     \
+   typedef fpt;                                                                                                                                                                        \
+   t1 _##name##_v1 = (v1);                                                                                                                                                             \
+   t2 _##name##_v2 = (v2);                                                                                                                                                             \
+   t3 _##name##_v3 = (v3);                                                                                                                                                             \
+   t4 _##name##_v4 = (v4);                                                                                                                                                             \
+   t5 _##name##_v5 = (v5);                                                                                                                                                             \
+   t6 _##name##_v6 = (v6);                                                                                                                                                             \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                  \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                       \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                     \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                            \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                    \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                    \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                      \
+})
+
+#define LP7(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, bt, bn)                                                                                          \
+({                                                                                                                                                                                                               \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                       \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                            \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                           \
+   int _a0, _a1;                                                                                                                                                                                                 \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                         \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                      \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                              \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                              \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                \
+})
+
+#define LP7NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, bt, bn)                                                                                            \
+({                                                                                                                                                                                                               \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                       \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                            \
+   int _d0, _d1;                                                                                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                                                 \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                         \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                              \
+})
+
+#define LP7NRFP6(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, bt, bn, fpt1, fpt2, fpt3, fpt4, fpt5, fpt6)                                                     \
+({                                                                                                                                                                                                               \
+   typedef fpt6;                                                                                                                                                                                                 \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                       \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                            \
+   int _d0, _d1;                                                                                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                                                 \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                         \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                              \
+})
+
+#define LP7A4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, bt, bn)                                                                                        \
+({                                                                                                                                                                                                               \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                       \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                            \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                           \
+   int _a0, _a1;                                                                                                                                                                                                 \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                               \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                      \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                              \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                              \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                \
+})
+
+#define LP7A4FP(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, bt, bn, fpt)                                                                                 \
+({                                                                                                                                                                                                               \
+   typedef fpt;                                                                                                                                                                                                  \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                       \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                            \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                           \
+   int _a0, _a1;                                                                                                                                                                                                 \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                               \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                      \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                              \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                              \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                \
+})
+
+#define LP7NRA4(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, bt, bn)                                                                                          \
+({                                                                                                                                                                                                               \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                       \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                            \
+   int _d0, _d1;                                                                                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                                                 \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                               \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                              \
+})
+
+#define LP8(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, bt, bn)                                                                                                        \
+({                                                                                                                                                                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                 \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                 \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                 \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                 \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                 \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                 \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                 \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                 \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                      \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                                                     \
+   int _a0, _a1;                                                                                                                                                                                                                           \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                                                   \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                        \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                                                        \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                                          \
+})
+
+#define LP8NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, bt, bn)                                                                                                          \
+({                                                                                                                                                                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                 \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                 \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                 \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                 \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                 \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                 \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                 \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                 \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                      \
+   int _d0, _d1;                                                                                                                                                                                                                           \
+   int _a0, _a1;                                                                                                                                                                                                                           \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                                                   \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                            \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                        \
+})
+
+#define LP8A4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, bt, bn)                                                                                                      \
+({                                                                                                                                                                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                 \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                 \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                 \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                 \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                 \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                 \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                 \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                 \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                      \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                                                     \
+   int _a0, _a1;                                                                                                                                                                                                                           \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                                                         \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                        \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                                                        \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                                          \
+})
+
+#define LP8NRA4(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, bt, bn)                                                                                                        \
+({                                                                                                                                                                                                                                         \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                 \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                 \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                 \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                 \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                 \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                 \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                 \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                 \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                      \
+   int _d0, _d1;                                                                                                                                                                                                                           \
+   int _a0, _a1;                                                                                                                                                                                                                           \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                                                         \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                            \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                        \
+})
+
+#define LP9(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, bt, bn)                                                                                                                      \
+({                                                                                                                                                                                                                                                                   \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                           \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                           \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                           \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                           \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                           \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                           \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                           \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                           \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                           \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                                                                               \
+   int _a0, _a1;                                                                                                                                                                                                                                                     \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                                                                             \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                          \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                  \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                                                                                  \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                                                                    \
+})
+
+#define LP9NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, bt, bn)                                                                                                                        \
+({                                                                                                                                                                                                                                                                   \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                           \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                           \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                           \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                           \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                           \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                           \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                           \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                           \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                           \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                \
+   int _d0, _d1;                                                                                                                                                                                                                                                     \
+   int _a0, _a1;                                                                                                                                                                                                                                                     \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                                                                             \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                                                      \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                  \
+})
+
+#define LP9A4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, bt, bn)                                                                                                                    \
+({                                                                                                                                                                                                                                                                   \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                           \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                           \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                           \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                           \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                           \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                           \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                           \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                           \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                           \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                                                                               \
+   int _a0, _a1;                                                                                                                                                                                                                                                     \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                                                                                   \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                          \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                  \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                                                                                  \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                                                                    \
+})
+
+#define LP9NRA4(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, bt, bn)                                                                                                                      \
+({                                                                                                                                                                                                                                                                   \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                           \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                           \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                           \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                           \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                           \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                           \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                           \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                           \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                           \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                \
+   int _d0, _d1;                                                                                                                                                                                                                                                     \
+   int _a0, _a1;                                                                                                                                                                                                                                                     \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                                                                                   \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                                                      \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                  \
+})
+
+#define LP10(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, t10, v10, r10, bt, bn)                                                                                                                                  \
+({                                                                                                                                                                                                                                                                                               \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                                                       \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                                                       \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                                                       \
+   t10 _##name##_v10 = (v10);                                                                                                                                                                                                                                                                    \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                                            \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                                                                                                           \
+   int _a0, _a1;                                                                                                                                                                                                                                                                                 \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                                                                                                         \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                                                      \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{"#r10"}" (_##name##_v10), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                                              \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                                                                                                              \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                                                                                                \
+})
+
+#define LP10NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, t10, v10, r10, bt, bn)                                                                                                                                    \
+({                                                                                                                                                                                                                                                                                               \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                                                       \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                                                       \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                                                       \
+   t10 _##name##_v10 = (v10);                                                                                                                                                                                                                                                                    \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                                            \
+   int _d0, _d1;                                                                                                                                                                                                                                                                                 \
+   int _a0, _a1;                                                                                                                                                                                                                                                                                 \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                                                                                                         \
+   : "={d0}" (_d0), "={d1}" (_d1), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{"#r10"}" (_##name##_v10), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                                              \
+})
+
+#define LP10A4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, t10, v10, r10, bt, bn)                                                                                                                                \
+({                                                                                                                                                                                                                                                                                               \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                                                       \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                                                       \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                                                       \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                                                       \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                                                       \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                                                       \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                                                       \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                                                       \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                                                       \
+   t10 _##name##_v10 = (v10);                                                                                                                                                                                                                                                                    \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                                            \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                                                                                                           \
+   int _a0, _a1;                                                                                                                                                                                                                                                                                 \
+   __asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4"                                                                                                                                                                                                                               \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                                                      \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{"#r10"}" (_##name##_v10), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                                              \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                                                                                                              \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                                                                                                \
+})
+
+#define LP11(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, t10, v10, r10, t11, v11, r11, bt, bn)                                                                                                                                               \
+({                                                                                                                                                                                                                                                                                                                           \
+   t1 _##name##_v1 = (v1);                                                                                                                                                                                                                                                                                                   \
+   t2 _##name##_v2 = (v2);                                                                                                                                                                                                                                                                                                   \
+   t3 _##name##_v3 = (v3);                                                                                                                                                                                                                                                                                                   \
+   t4 _##name##_v4 = (v4);                                                                                                                                                                                                                                                                                                   \
+   t5 _##name##_v5 = (v5);                                                                                                                                                                                                                                                                                                   \
+   t6 _##name##_v6 = (v6);                                                                                                                                                                                                                                                                                                   \
+   t7 _##name##_v7 = (v7);                                                                                                                                                                                                                                                                                                   \
+   t8 _##name##_v8 = (v8);                                                                                                                                                                                                                                                                                                   \
+   t9 _##name##_v9 = (v9);                                                                                                                                                                                                                                                                                                   \
+   t10 _##name##_v10 = (v10);                                                                                                                                                                                                                                                                                                \
+   t11 _##name##_v11 = (v11);                                                                                                                                                                                                                                                                                                \
+   void *_##name##_bn = (void *)(bn);                                                                                                                                                                                                                                                                                        \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                                                                                                                                                                                                                                       \
+   int _a0, _a1;                                                                                                                                                                                                                                                                                                             \
+   __asm volatile ("jsr a6@(-"#offs":W)"                                                                                                                                                                                                                                                                                     \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)                                                                                                                                                                                                                                  \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{"#r4"}" (_##name##_v4), "{"#r5"}" (_##name##_v5), "{"#r6"}" (_##name##_v6), "{"#r7"}" (_##name##_v7), "{"#r8"}" (_##name##_v8), "{"#r9"}" (_##name##_v9), "{"#r10"}" (_##name##_v10), "{"#r11"}" (_##name##_v11), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                                                                                                                                                                                                                                          \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                                                                                                                                                                                                                                          \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                                                                                                                                                                                                                                            \
+})
+
+#define LP2A5(offs, rt, name, t1, v1, r1, t2, v2, r2, bt, bn)                               \
+({                                                                                          \
+   t1 _##name##_v1 = (v1);                                                                  \
+   t2 _##name##_v2 = (v2);                                                                  \
+   void *_##name##_bn = (void *)(bn);                                                       \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                      \
+   int _a0, _a1;                                                                            \
+   __asm volatile ("exg d7,a5\n\tjsr a6@(-"#offs":W)\n\texg d7,a5"                          \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1) \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{a6}" (_##name##_bn)              \
+   : "fp0", "fp1", "cc", "memory");                                                         \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                         \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                           \
+})
+
+#define LP3A5(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, bt, bn)                                \
+({                                                                                                       \
+   t1 _##name##_v1 = (v1);                                                                               \
+   t2 _##name##_v2 = (v2);                                                                               \
+   t3 _##name##_v3 = (v3);                                                                               \
+   void *_##name##_bn = (void *)(bn);                                                                    \
+   union { rt _re; unsigned long _l[2]; } _##name##_u;                                                   \
+   int _a0, _a1;                                                                                         \
+   __asm volatile ("exg d7,a5\n\tjsr a6@(-"#offs":W)\n\texg d7,a5"                                       \
+   : "={d0}" (_##name##_u._l[0]), "={d1}" (_##name##_u._l[1]), "={a0}" (_a0), "={a1}" (_a1)              \
+   : "{"#r1"}" (_##name##_v1), "{"#r2"}" (_##name##_v2), "{"#r3"}" (_##name##_v3), "{a6}" (_##name##_bn) \
+   : "fp0", "fp1", "cc", "memory");                                                                      \
+   __builtin_choose_expr(sizeof(rt) < sizeof(long),                                                      \
+                         (rt)_##name##_u._l[0], _##name##_u._re);                                        \
+})
+
+#else /* __GNUC__ < 16 */
+
 #define LP0(offs, rt, name, bt, bn)				\
 ({								\
    rt _##name##_re2 =						\
@@ -1821,5 +2987,7 @@
    });								\
    _##name##_re2;						\
 })
+
+#endif /* __GNUC__ >= 16 */
 
 #endif /* __INLINE_MACROS_H */
