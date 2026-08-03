@@ -377,22 +377,15 @@ BEGIN {
           } elsif ($pattern eq 'multi') {
               $self->generate_multi_varargs(%params);
           } else {
-              # Fallback to generic taglist
               $self->generate_taglist_varargs(%params);
           }
           
-          # Generate aliases for varargs function
           $self->generate_aliases(%params);
           return;
       }
 
-      # forced_a4 states:
-      # 0 = normal mode (emit dual version if a4 used)
-      # 1 = non-baserel version
-      # 2 = baserel version (a4 <-> d6 swap)
       my $forced_a4 = $params{'forced_a4'} // 0;
 
-      # detect if any arg is assigned to a5 / a4 in the SFD
       my $uses_a5 = 0;
       my $uses_a4 = 0;
       for my $r (@regs) {
@@ -401,8 +394,6 @@ BEGIN {
           $uses_a4 = 1 if $r eq 'a4';
       }
 
-      # If a4 is used and we are in normal mode (forced_a4 == 0),
-      # emit dual version guarded by __baserel__
       if ($uses_a4 && $forced_a4 == 0) {
           print "#ifndef __baserel__\n";
           $self->function(%params, forced_a4 => 1);
@@ -412,14 +403,12 @@ BEGIN {
           return;
       }
 
-      # Emit macro redirect
       print "#define $$p{'funcname'}(";
       print join(", ", @names);
       print ") __$$p{'funcname'}(";
       print join(", ", @names);
       print ")\n";
 
-      # Emit static inline with prefixed name
       print "static inline $ret __$$p{'funcname'}(";
       for my $i (0 .. $#types) {
           my $decl = rewrite_type_for_declaration($types[$i], $names[$i]);
@@ -428,22 +417,19 @@ BEGIN {
       }
       print ") {\n";
 
-      # return register (only for non-void)
+      # Return register (always create for non-void)
       if (!$is_void) {
           print "  register $ret __v_ret __asm(\"d0\");\n";
       }
 
-      # library base in a6
       print "  register void *const __v_base __asm(\"a6\") = $self->{BASE};\n";
 
-      # bind args to their registers
+      my %used_regs = ();
+
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
           next unless defined $r && $r ne '';
 
-          # remap special registers:
-          # - a5 -> d7 (frame pointer preservation)
-          # - a4 -> d6 only in forced_a4 == 2 (baserel version)
           my $bind_reg =
               ($r eq 'a5')               ? 'd7' :
               ($r eq 'a4' && $forced_a4 == 2) ? 'd6' :
@@ -451,17 +437,37 @@ BEGIN {
 
           my $decl = rewrite_type_for_declaration($types[$i], "__v$i");
           print "  register $decl __asm(\"$bind_reg\") = $names[$i];\n";
+          $used_regs{$bind_reg} = 1;
       }
 
-      # build input constraints
+      my @clobbers = ("fp0", "fp1", "cc", "memory");
+      
+      # d0 is only clobbered if void (no return value)
+      if ($is_void && !$used_regs{'d0'}) {
+          push @clobbers, "d0";
+      }
+      
+      # d1, a0, a1 are clobbered if not used as parameters
+      if (!$used_regs{'d1'}) {
+          push @clobbers, "d1";
+      }
+      if (!$used_regs{'a0'}) {
+          push @clobbers, "a0";
+      }
+      if (!$used_regs{'a1'}) {
+          push @clobbers, "a1";
+      }
+
       my @inputs;
+      my @outputs;
+      
+      # Library base is always an input (a6) - a6 is preserved
       push @inputs, "\"a\"(__v_base)";
 
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
           next unless defined $r && $r ne '';
 
-          # effective register (a5->d7, a4->d6 only in forced_a4 == 2)
           my $bind_reg =
               ($r eq 'a5')               ? 'd7' :
               ($r eq 'a4' && $forced_a4 == 2) ? 'd6' :
@@ -473,18 +479,32 @@ BEGIN {
               $bind_reg =~ /^fp/ ? "f" :
                                    "d";
 
-          push @inputs, "\"$c\"(__v$i)";
+          # Check if this is a clobberable register (d0, d1, a0, a1)
+          my $is_clobberable = ($bind_reg =~ /^(d0|d1|a0|a1)$/);
+          
+          if ($is_clobberable) {
+              # If it's d0 and we have a return value, it's an input
+              # (the return value is a separate output)
+              if ($bind_reg eq 'd0' && !$is_void) {
+                  # d0 is a parameter, but return is also in d0
+                  # Use input only for the parameter
+                  push @inputs, "\"$c\"(__v$i)";
+              } else {
+                  # Other clobberable registers are in/out
+                  push @outputs, "\"+$c\"(__v$i)";
+              }
+          } else {
+              # Other registers are preserved by the callee, so just input
+              push @inputs, "\"$c\"(__v$i)";
+          }
       }
 
-      # inline asm body
       print "  __asm volatile (\n";
 
-      # a5 frame pointer swap (always, if used)
       if ($uses_a5) {
           print "                   \"exg %%d7,%%a5\\n\"\n";
       }
 
-      # a4 baserel swap (only in forced_a4 == 2)
       if ($uses_a4 && $forced_a4 == 2) {
           print "                   \"exg %%d6,%%a4\\n\"\n";
       }
@@ -500,22 +520,26 @@ BEGIN {
       }
 
       # outputs
-      if ($is_void) {
-          print "                   :\n";
+      my @all_outputs = @outputs;
+      if (!$is_void) {
+          unshift @all_outputs, "\"=r\"(__v_ret)";
+      }
+      
+      if (@all_outputs) {
+          print "                   : " . join(", ", @all_outputs) . "\n";
       } else {
-          print "                   : \"=r\"(__v_ret)\n";
+          print "                   :\n";
       }
 
       # inputs
       print "                   : " . join(", ", @inputs) . "\n";
 
-      # clobbers (no a5/d7 or a4/d6 here)
-      my @clobbers = ("d1", "a0", "a1", "fp0", "fp1", "cc", "memory");
-
-      # d0 only clobbered for void functions
-      push @clobbers, "d0" if $is_void;
-
-      print "                   : \"" . join("\", \"", @clobbers) . "\" );\n";
+      # clobbers
+      if (@clobbers) {
+          print "                   : \"" . join("\", \"", @clobbers) . "\" );\n";
+      } else {
+          print "                   : );\n";
+      }
 
       if ($is_void) {
           print "}\n\n";
@@ -523,7 +547,6 @@ BEGIN {
           print "  return __v_ret;\n}\n\n";
       }
       
-      # Generate aliases for regular function
       $self->generate_aliases(%params);
     }
 }
