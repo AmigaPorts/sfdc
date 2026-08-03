@@ -3,6 +3,9 @@ BEGIN {
     use vars qw(@ISA);
     @ISA = qw( Macro );   # reuse ctor/header/footer from Macro
 
+	# In the package scope, keep track of the last non-varargs function name
+    our $LAST_FUNCTION_NAME = '';
+
     sub rewrite_type_for_declaration {
         my ($type, $name) = @_;
 
@@ -21,8 +24,15 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      $self->SUPER::header (@_);
-
+      print "/* Automatically generated header (sfdc SFDC_VERSION)! Do not edit! */\n";
+      print "\n";
+      print "#ifndef _INLINE_$$sfd{'BASENAME'}_H\n";
+      print "#define _INLINE_$$sfd{'BASENAME'}_H\n\n";
+      
+      print "#ifndef _PROTO_$$sfd{'BASENAME'}_H\n";
+      print "#include <proto/$$sfd{'basename'}.h>\n";
+      print "#endif\n\n";
+      
       if ($$sfd{'base'} ne '') {
           print "#ifndef $self->{BASE}\n";
           print "#define $self->{BASE} $$sfd{'base'}\n";
@@ -101,9 +111,13 @@ BEGIN {
             return 'multi';
         }
         
-        # Check if second argument is format string
-        if (@types >= 2 && $types[1] =~ /CONST_STRPTR|format/i) {
-            return 'format';
+        # Check if the last fixed parameter is a format string
+        # (the parameter before the varargs)
+        if (@types >= 1) {
+            my $last_type = $types[-1];
+            if ($last_type =~ /CONST_STRPTR|format/i) {
+                return 'format';
+            }
         }
         
         # Default to taglist
@@ -127,10 +141,19 @@ BEGIN {
         my $fixed_count = scalar(@names);
         my $is_void = ($ret =~ /^(VOID|void)$/);
         
-        # Derive TagList version
-        my $taglist_fname = $fname;
-        $taglist_fname =~ s/Tags$//;
-        $taglist_fname .= 'TagList';
+        # Derive TagList version:
+        # 1. If we have a stored function name, use it (OpenWorkbenchObjectA)
+        # 2. Else: Tags -> TagList (AllocDosObjectTags -> AllocDosObjectTagList)
+        my $taglist_fname = $LAST_FUNCTION_NAME;
+        if (!$taglist_fname) {
+            $taglist_fname = $fname;
+            if ($fname =~ /Tags$/) {
+                $taglist_fname =~ s/Tags$/TagList/;
+            } else {
+                # Fallback: append A
+                $taglist_fname .= 'A';
+            }
+        }
         
         # Emit static helper declaration
         print "static __stdargs $ret __${fname}_va(";
@@ -149,7 +172,7 @@ BEGIN {
         print ", ...)\n{\n";
         
         my $last_fixed = $names[$fixed_count-1];
-        print "    const ULONG *tags = &$last_fixed;\n";
+        print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
         
         if ($is_void) {
             print "    $taglist_fname(";
@@ -384,6 +407,9 @@ BEGIN {
           return;
       }
 
+      # Store this function name for potential varargs that follow
+      $LAST_FUNCTION_NAME = $fname;
+
       my $forced_a4 = $params{'forced_a4'} // 0;
 
       my $uses_a5 = 0;
@@ -426,6 +452,7 @@ BEGIN {
 
       my %used_regs = ();
 
+      # bind args to their registers
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
           next unless defined $r && $r ne '';
@@ -435,7 +462,14 @@ BEGIN {
               ($r eq 'a4' && $forced_a4 == 2) ? 'd6' :
                                                 $r;
 
-          my $decl = rewrite_type_for_declaration($types[$i], "__v$i");
+          # Clean the type for register declaration
+          my $clean_type = $types[$i];
+          # Remove "const" or "CONST" (with optional trailing space)
+          $clean_type =~ s/^\s*(const|CONST)\s+//;
+          # Remove "CONST_" prefix
+          $clean_type =~ s/^CONST_//;
+
+          my $decl = rewrite_type_for_declaration($clean_type, "__v$i");
           print "  register $decl __asm(\"$bind_reg\") = $names[$i];\n";
           $used_regs{$bind_reg} = 1;
       }

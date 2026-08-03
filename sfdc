@@ -210,7 +210,7 @@ GetOptions ('addvectors=s' => \$addvectors,
           'version|v'    => \$version) or exit 10;
 
 if ($version) {
-    print STDERR "sfdc 1.11g (2026-08-03)\n";
+    print STDERR "sfdc 1.11e (2022-10-08)\n";
     print STDERR "Copyright (C) 2003-2016 Martin Blom <martin\@blom.org>\n";
     print STDERR "This is free software; " .
       "see the source for copying conditions.\n";
@@ -1041,7 +1041,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       if ($sfd->{base} ne '') {
           print "#ifdef __cplusplus\n";
@@ -1136,7 +1136,7 @@ BEGIN {
 
       $v =~ s/^\$[I]d: .*? ([0-9.]+).*/$1/;
       $d =~ s,^\$[I]d: .*? [0-9.]+ (\d{4})/(\d{2})/(\d{2}).*,($3.$2.$1),;
-      print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef CLIB_$$sfd{'BASENAME'}_PROTOS_H\n";
       print "#define CLIB_$$sfd{'BASENAME'}_PROTOS_H\n";
@@ -1343,7 +1343,7 @@ BEGIN {
       my $sfd  = $self->{SFD};
 
       print "* \"$$sfd{'libname'}\"\n";
-      print "* Automatically generated FD (sfdc 1.11g)! Do not edit!\n";
+      print "* Automatically generated FD (sfdc 1.11e)! Do not edit!\n";
       print "##base _$$sfd{'base'}\n";
       $self->{BIAS}    = -1;
       $self->{PRIVATE} = -1;
@@ -1424,7 +1424,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated function table (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated function table (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifdef __SFDC_FUNCTABLE_M68K__\n";
       print "# define _sfdc_func(f) &m68k ## f\n";
@@ -2303,19 +2303,19 @@ BEGIN {
       my $sfd  = $self->{SFD};
 
       if ($self->{PROTO}) {
-          print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+          print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
           print "\n";
           print "#ifndef _GATEPROTO_$$sfd{'BASENAME'}_H\n";
           print "#define _GATEPROTO_$$sfd{'BASENAME'}_H\n";
       }
       elsif ($self->{LIBPROTO}) {
-          print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+          print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
           print "\n";
           print "#ifndef _LIBPROTO_$$sfd{'BASENAME'}_H\n";
           print "#define _LIBPROTO_$$sfd{'BASENAME'}_H\n";
       }
       else {
-          print "/* Automatically generated gatestubs (sfdc 1.11g)! Do not edit! */\n";
+          print "/* Automatically generated gatestubs (sfdc 1.11e)! Do not edit! */\n";
       }
       print "\n";
 
@@ -2644,7 +2644,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated function table (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated function table (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef $sfd->{'BASENAME'}_INTERFACE_DEF_H\n";
       print "#define $sfd->{'BASENAME'}_INTERFACE_DEF_H\n";
@@ -2759,7 +2759,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "* Automatically generated header (sfdc 1.11g)! Do not edit!\n";
+      print "* Automatically generated header (sfdc 1.11e)! Do not edit!\n";
       print "     IFND  LVO_$sfd->{BASENAME}_LIB_I\n";
       print "LVO_$sfd->{BASENAME}_LIB_I   SET   1\n";
       print "\n";
@@ -3105,6 +3105,9 @@ BEGIN {
     use vars qw(@ISA);
     @ISA = qw( Macro );   # reuse ctor/header/footer from Macro
 
+	# In the package scope, keep track of the last non-varargs function name
+    our $LAST_FUNCTION_NAME = '';
+
     sub rewrite_type_for_declaration {
         my ($type, $name) = @_;
 
@@ -3123,8 +3126,15 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      $self->SUPER::header (@_);
-
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
+      print "\n";
+      print "#ifndef _INLINE_$$sfd{'BASENAME'}_H\n";
+      print "#define _INLINE_$$sfd{'BASENAME'}_H\n\n";
+      
+      print "#ifndef _PROTO_$$sfd{'BASENAME'}_H\n";
+      print "#include <proto/$$sfd{'basename'}.h>\n";
+      print "#endif\n\n";
+      
       if ($$sfd{'base'} ne '') {
           print "#ifndef $self->{BASE}\n";
           print "#define $self->{BASE} $$sfd{'base'}\n";
@@ -3203,9 +3213,13 @@ BEGIN {
             return 'multi';
         }
         
-        # Check if second argument is format string
-        if (@types >= 2 && $types[1] =~ /CONST_STRPTR|format/i) {
-            return 'format';
+        # Check if the last fixed parameter is a format string
+        # (the parameter before the varargs)
+        if (@types >= 1) {
+            my $last_type = $types[-1];
+            if ($last_type =~ /CONST_STRPTR|format/i) {
+                return 'format';
+            }
         }
         
         # Default to taglist
@@ -3229,10 +3243,19 @@ BEGIN {
         my $fixed_count = scalar(@names);
         my $is_void = ($ret =~ /^(VOID|void)$/);
         
-        # Derive TagList version
-        my $taglist_fname = $fname;
-        $taglist_fname =~ s/Tags$//;
-        $taglist_fname .= 'TagList';
+        # Derive TagList version:
+        # 1. If we have a stored function name, use it (OpenWorkbenchObjectA)
+        # 2. Else: Tags -> TagList (AllocDosObjectTags -> AllocDosObjectTagList)
+        my $taglist_fname = $LAST_FUNCTION_NAME;
+        if (!$taglist_fname) {
+            $taglist_fname = $fname;
+            if ($fname =~ /Tags$/) {
+                $taglist_fname =~ s/Tags$/TagList/;
+            } else {
+                # Fallback: append A
+                $taglist_fname .= 'A';
+            }
+        }
         
         # Emit static helper declaration
         print "static __stdargs $ret __${fname}_va(";
@@ -3251,7 +3274,7 @@ BEGIN {
         print ", ...)\n{\n";
         
         my $last_fixed = $names[$fixed_count-1];
-        print "    const ULONG *tags = &$last_fixed;\n";
+        print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
         
         if ($is_void) {
             print "    $taglist_fname(";
@@ -3486,6 +3509,9 @@ BEGIN {
           return;
       }
 
+      # Store this function name for potential varargs that follow
+      $LAST_FUNCTION_NAME = $fname;
+
       my $forced_a4 = $params{'forced_a4'} // 0;
 
       my $uses_a5 = 0;
@@ -3528,6 +3554,7 @@ BEGIN {
 
       my %used_regs = ();
 
+      # bind args to their registers
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
           next unless defined $r && $r ne '';
@@ -3537,7 +3564,14 @@ BEGIN {
               ($r eq 'a4' && $forced_a4 == 2) ? 'd6' :
                                                 $r;
 
-          my $decl = rewrite_type_for_declaration($types[$i], "__v$i");
+          # Clean the type for register declaration
+          my $clean_type = $types[$i];
+          # Remove "const" or "CONST" (with optional trailing space)
+          $clean_type =~ s/^\s*(const|CONST)\s+//;
+          # Remove "CONST_" prefix
+          $clean_type =~ s/^CONST_//;
+
+          my $decl = rewrite_type_for_declaration($clean_type, "__v$i");
           print "  register $decl __asm(\"$bind_reg\") = $names[$i];\n";
           $used_regs{$bind_reg} = 1;
       }
@@ -3763,7 +3797,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef _PPCINLINE_$$sfd{'BASENAME'}_H\n";
       print "#define _PPCINLINE_$$sfd{'BASENAME'}_H\n";
@@ -3953,7 +3987,7 @@ BEGIN {
       my $self = shift;
       my $sfd  = $self->{SFD};
 
-      print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef _INLINE_$$sfd{'BASENAME'}_H\n";
       print "#define _INLINE_$$sfd{'BASENAME'}_H\n";
@@ -4351,7 +4385,7 @@ BEGIN {
       my $BaseName  = $$sfd{'BaseName'};
       my $basetype  = $$sfd{'basetype'};
 
-      print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
       print "#ifndef PROTO_${BASENAME}_H\n";
       print "#define PROTO_${BASENAME}_H\n";
@@ -4428,7 +4462,7 @@ BEGIN {
       $v =~ s/^\$[I]d: .*? ([0-9.]+).*/$1/;
       $d =~ s,^\$[I]d: .*? [0-9.]+ (\d{4})/(\d{2})/(\d{2}).*,($3.$2.$1),;
 
-      print "/* Automatically generated header (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated header (sfdc 1.11e)! Do not edit! */\n";
       print "#ifndef PRAGMAS_$sfd->{BASENAME}_PRAGMAS_H\n";
       print "#define PRAGMAS_$sfd->{BASENAME}_PRAGMAS_H\n";
       print "\n";
@@ -5493,7 +5527,7 @@ BEGIN {
 
       $self->{NEWFILE} = 1;
 
-      print "/* Automatically generated stubs (sfdc 1.11g)! Do not edit! */\n";
+      print "/* Automatically generated stubs (sfdc 1.11e)! Do not edit! */\n";
       print "\n";
 
       foreach my $inc (@{$$sfd{'includes'}}) {
