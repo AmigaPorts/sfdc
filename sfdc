@@ -4358,18 +4358,6 @@ BEGIN {
       print "\n";
       print "#include <clib/${basename}_protos.h>\n";
       print "\n";
-      print "#ifndef _NO_INLINE\n";
-      print "# if defined(__GNUC__)\n";
-      print "#  ifdef __AROS__\n";
-      print "#   include <defines/${basename}.h>\n";
-      print "#  else\n";
-      print "#   include <inline/${basename}.h>\n";
-      print "#  endif\n";
-      print "# else\n";
-      print "#  include <pragmas/${basename}_pragmas.h>\n";
-      print "# endif\n";
-      print "#endif /* _NO_INLINE */\n";
-      print "\n";
 
       if ($base ne '') {
           print "#ifdef __amigaos4__\n";
@@ -4387,6 +4375,19 @@ BEGIN {
           print "#endif /* !__NOLIBBASE__ */\n";
           print "\n";
       }
+
+      print "#ifndef _NO_INLINE\n";
+      print "# if defined(__GNUC__)\n";
+      print "#  ifdef __AROS__\n";
+      print "#   include <defines/${basename}.h>\n";
+      print "#  else\n";
+      print "#   include <inline/${basename}.h>\n";
+      print "#  endif\n";
+      print "# else\n";
+      print "#  include <pragmas/${basename}_pragmas.h>\n";
+      print "# endif\n";
+      print "#endif /* _NO_INLINE */\n";
+      print "\n";
     }
 
     sub function {
