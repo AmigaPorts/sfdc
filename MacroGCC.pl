@@ -3,7 +3,7 @@ BEGIN {
     use vars qw(@ISA);
     @ISA = qw( Macro );   # reuse ctor/header/footer from Macro
 
-	# In the package scope, keep track of the last non-varargs function name
+    # In the package scope, keep track of the last non-varargs function name
     our $LAST_FUNCTION_NAME = '';
 
     sub rewrite_type_for_declaration {
@@ -82,6 +82,16 @@ BEGIN {
         }
         
         return (\@types, \@names);
+    }
+
+    # Helper: Check if a type uses multiple registers
+    sub is_multi_register_type {
+        my ($self, $type) = @_;
+        # 64-bit integers and doubles use d0:d1 on m68k
+        if ($type =~ /LONG LONG|QUAD|int64_t|DOUBLE|double|long long/i) {
+            return 1;
+        }
+        return 0;
     }
 
     # Helper: Detect varargs pattern
@@ -286,7 +296,6 @@ BEGIN {
         
         # Get the last fixed parameter
         my $last_fixed = $names[$fixed_count-1];
-        my $last_type = $types[$fixed_count-1];
         
         print "    const LONG *argptr = (const LONG *)&$last_fixed + 1;\n";
         print "    \n";
@@ -430,6 +439,31 @@ BEGIN {
       print "  register void *const __v_base __asm(\"a6\") = $self->{BASE};\n";
 
       my %used_regs = ();
+      
+      # Check if any parameter uses a multi-register type (d0:d1)
+      my $uses_d1_for_param = 0;
+      my $uses_a1_for_param = 0;
+      
+      for my $i (0 .. $#types) {
+          my $r = $regs[$i];
+          next unless defined $r && $r ne '';
+          
+          my $bind_reg =
+              ($r eq 'a5')               ? 'd7' :
+              ($r eq 'a4' && $forced_a4 == 2) ? 'd6' :
+                                                $r;
+          
+          # Check if this register uses a multi-register type
+          if (($bind_reg eq 'd0' || $bind_reg eq 'd1') && 
+              $self->is_multi_register_type($types[$i])) {
+              $uses_d1_for_param = 1;
+          }
+          
+          if (($bind_reg eq 'a0' || $bind_reg eq 'a1') && 
+              $self->is_multi_register_type($types[$i])) {
+              $uses_a1_for_param = 1;
+          }
+      }
 
       # bind args to their registers
       for my $i (0 .. $#types) {
@@ -443,7 +477,6 @@ BEGIN {
 
           # Clean the type for register declaration
           my $clean_type = $types[$i];
-          my $original_type = $types[$i];
           
           # Check if we stripped anything
           my $stripped = 0;
@@ -468,7 +501,7 @@ BEGIN {
           
           $used_regs{$bind_reg} = 1;
       }
-      
+
       my @clobbers = ("fp0", "fp1", "cc", "memory");
       
       # d0 is only clobbered if void (no return value)
@@ -476,14 +509,18 @@ BEGIN {
           push @clobbers, "d0";
       }
       
-      # d1, a0, a1 are clobbered if not used as parameters
-      if (!$used_regs{'d1'}) {
+      # d1 is clobbered if not used as a parameter AND not used by a multi-register type
+      if (!$used_regs{'d1'} && !$uses_d1_for_param) {
           push @clobbers, "d1";
       }
+      
+      # a0 is clobbered if not used as a parameter
       if (!$used_regs{'a0'}) {
           push @clobbers, "a0";
       }
-      if (!$used_regs{'a1'}) {
+      
+      # a1 is clobbered if not used as a parameter AND not used by a multi-register type
+      if (!$used_regs{'a1'} && !$uses_a1_for_param) {
           push @clobbers, "a1";
       }
 
