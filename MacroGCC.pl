@@ -180,14 +180,16 @@ BEGIN {
         # The array pointer must have the type of the base function's last
         # parameter (e.g. DoGadgetMethodA takes Msg, not a TagItem list).
         my $cast = $LAST_FUNCTION_LAST_TYPE || 'CONST struct TagItem *';
+        
+        # Get base macro name
+        my $base_macro = $self->{BASE};
 
-        # Emit static helper definition. noipa, not just noinline: the helper
-        # relies on the caller having pushed the variadic arguments after the
-        # named ones, and IPA constant propagation may clone it with the
-        # variadic part specialized away, which breaks the stack layout the
-        # same way inlining does.
-        print "__attribute__((noipa))\n";
-        print "static __stdargs $ret __${fname}_va(";
+        # Emit static helper definition - base is first parameter in a6
+        print "__attribute__((noinline, optimize(\"omit-frame-pointer\")))\n";
+        print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
+        if (@param_decl) {
+            print ", ";
+        }
         print join(", ", @param_decl);
         print ", ...)\n{\n";
         
@@ -202,31 +204,20 @@ BEGIN {
             print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
         }
         
-        if ($is_void) {
-            print "    $taglist_fname(";
-        } else {
-            print "    return $taglist_fname(";
-        }
+        # Build the call to the base function
+        my @call_args = @pass_names;
+        push @call_args, "($cast)tags";
         
-        print join(", ", @pass_names);
-        if (@pass_names) {
-            print ", ";
+        print "    __asm volatile(\"\"::\"a\"(__base));\n";
+        if ($is_void) {
+            print "    __${taglist_fname}_base(" . join(", ", @call_args) . ");\n";
+        } else {
+            print "    return __${taglist_fname}_base(" . join(", ", @call_args) . ");\n";
         }
-        print "($cast)tags);\n";
         print "}\n\n";
         
-        # Emit macro wrapper
-        print "#define $fname(";
-        print join(", ", @param_names);
-        if (@param_names) {
-            print ", ";
-        }
-        print "...) __${fname}_va(";
-        print join(", ", @param_names);
-        if (@param_names) {
-            print ", ";
-        }
-        print "## __VA_ARGS__)\n\n";
+        # Emit macro wrapper - passes base as argument
+        print "#define $fname(...) __${fname}_va($base_macro, __VA_ARGS__)\n\n";
     }
 
     # Generate Format String varargs helper
@@ -253,10 +244,16 @@ BEGIN {
         my @param_decl = map { "$types[$_] $names[$_]" } (0 .. $fixed_count-1);
         my @param_names = @names;
         
-        # Emit helper definition with actual parameter names
-        # noipa, not just noinline: see generate_taglist_varargs.
-        print "__attribute__((noipa))\n";
-        print "static __stdargs $ret __${fname}_va(";
+        # Get base macro name
+        my $base_macro = $self->{BASE};
+
+        # Emit helper definition
+        print "__attribute__((noinline))\n";
+        print "__attribute__((optimize(\"omit-frame-pointer\")))\n";
+        print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
+        if (@param_decl) {
+            print ", ";
+        }
         print join(", ", @param_decl);
         print ", ...)\n{\n";
         
@@ -264,30 +261,30 @@ BEGIN {
         my $last_fixed = $names[$fixed_count-1];
         
         # With __stdargs, all parameters are on the stack: the slot after the
-        # last fixed parameter is the start of the varargs. The +1 must apply
-        # to the typed pointer, not the void pointer (that would add 1 byte).
+        # last fixed parameter is the start of the varargs.
         print "    const void *args = (const void *)(&$last_fixed + 1);\n";
         
+        my @call_args = @param_names;
+        push @call_args, "args";
+
+        print "    __asm volatile(\"\"::\"a\"(__base));\n";
         if ($is_void) {
-            print "    $v_fname(";
+            print "    __${v_fname}_base(" . join(", ", @call_args) . ");\n";
         } else {
-            print "    return $v_fname(";
+            print "    return __${v_fname}_base(" . join(", ", @call_args) . ");\n";
         }
-        
-        print join(", ", @param_names);
-        if (@param_names) {
-            print ", ";
-        }
-        print "args);\n";
         print "}\n\n";
         
-        # Emit macro wrapper with actual parameter names
+        # Emit macro wrapper - passes base as first parameter
         print "#define $fname(";
         print join(", ", @param_names);
         if (@param_names) {
             print ", ";
         }
-        print "...) __${fname}_va(";
+        print "...) __${fname}_va($base_macro";
+        if (@param_names) {
+            print ", ";
+        }
         print join(", ", @param_names);
         if (@param_names) {
             print ", ";
@@ -315,11 +312,17 @@ BEGIN {
         # Build parameter lists
         my @param_decl = map { "$types[$_] $names[$_]" } (0 .. $fixed_count-1);
         my @param_names = @names;
+        
+        # Get base macro name
+        my $base_macro = $self->{BASE};
      
-        # Emit helper definition
-        # noipa, not just noinline: see generate_taglist_varargs.
-        print "__attribute__((noipa))\n";
-        print "static __stdargs $ret __${fname}_va(";
+        # Emit helper definition - base is first parameter in a6
+        print "__attribute__((noinline))\n";
+        print "__attribute__((optimize(\"omit-frame-pointer\")))\n";
+        print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
+        if (@param_decl) {
+            print ", ";
+        }
         print join(", ", @param_decl);
         print ", ...)\n{\n";
         
@@ -328,7 +331,6 @@ BEGIN {
         
         # Get the last fixed parameter
         my $last_fixed = $names[$fixed_count-1];
-        
         print "    const LONG *argptr = (const LONG *)&$last_fixed + 1;\n";
         print "    \n";
         print "    while (count < 5 && argptr) {\n";
@@ -336,18 +338,32 @@ BEGIN {
         print "    }\n";
         print "    \n";
         
-        if ($is_void) {
-            print "    DoPkt(";
-        } else {
-            print "    return DoPkt(";
-        }
+        my @call_args = @param_names;
+        push @call_args, "args[0], args[1], args[2], args[3], args[4]";
         
+        print "    __asm volatile(\"\"::\"a\"(__base));\n";
+        if ($is_void) {
+            print "    DoPkt(" . join(", ", @call_args) . ");\n";
+        } else {
+            print "    return DoPkt(" . join(", ", @call_args) . ");\n";
+        }
+        print "}\n\n";
+        
+        # Emit macro wrapper
+        print "#define $fname(";
         print join(", ", @param_names);
         if (@param_names) {
             print ", ";
         }
-        print "args[0], args[1], args[2], args[3], args[4]);\n";
-        print "}\n\n";
+        print "...) __${fname}_va($base_macro";
+        if (@param_names) {
+            print ", ";
+        }
+        print join(", ", @param_names);
+        if (@param_names) {
+            print ", ";
+        }
+        print "## __VA_ARGS__)\n\n";
     }
 
     # Generate aliases for a function
@@ -448,27 +464,22 @@ BEGIN {
           return;
       }
 
-      print "#define $$p{'funcname'}(";
-      print join(", ", @names);
-      print ") __$$p{'funcname'}(";
-      print join(", ", @names);
-      print ")\n";
+      my $base_macro = $self->{BASE};
 
-      print "static inline $ret __$$p{'funcname'}(";
-      my @decls = map { rewrite_type_for_declaration($types[$_], $names[$_]) } (0 .. $#types);
-      print join(", ", @decls);
-      print ") {\n";
+      # Generate the base inline assembly macro (__${fname}_base)
+      # Takes __v_base as first parameter, then all original parameters
+      print "#define __${fname}_base(";
+      print join(", ", @names);
+      print ") ({\\\n";
 
       # Return register (always create for non-void)
       if (!$is_void) {
-          print "  register $ret __v_ret __asm(\"d0\");\n";
+          print "  register $ret __v_ret __asm(\"d0\");\\\n";
       }
-
-      print "  register void *const __v_base __asm(\"a6\") = $self->{BASE};\n";
 
       my %used_regs = ();
       
-      # Check if any parameter uses a multi-register type (d0:d1)
+      # Check if any parameter uses a multi-register type
       my $uses_d1_for_param = 0;
       my $uses_a1_for_param = 0;
       
@@ -522,9 +533,9 @@ BEGIN {
           
           # If we stripped const, cast the value to the cleaned type
           if ($stripped) {
-              print "  register $decl __asm(\"$bind_reg\") = ($clean_type)$names[$i];\n";
+              print "  register $decl __asm(\"$bind_reg\") = ($clean_type)$names[$i];\\\n";
           } else {
-              print "  register $decl __asm(\"$bind_reg\") = $names[$i];\n";
+              print "  register $decl __asm(\"$bind_reg\") = $names[$i];\\\n";
           }
           
           $used_regs{$bind_reg} = 1;
@@ -555,9 +566,6 @@ BEGIN {
       my @inputs;
       my @outputs;
       
-      # Library base is always an input (a6) - a6 is preserved
-      push @inputs, "\"a\"(__v_base)";
-
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
           next unless defined $r && $r ne '';
@@ -593,24 +601,24 @@ BEGIN {
           }
       }
 
-      print "  __asm volatile (\n";
+      print "  __asm volatile (\\\n";
 
       if ($uses_a5) {
-          print "                   \"exg %%d7,%%a5\\n\"\n";
+          print "                   \"exg %%d7,%%a5\\n\"\\\n";
       }
 
       if ($uses_a4 && $forced_a4 == 2) {
-          print "                   \"exg %%d6,%%a4\\n\"\n";
+          print "                   \"exg %%d6,%%a4\\n\"\\\n";
       }
 
-      print "                   \"jsr %%a6@(-$bias:W)\\n\"\n";
+      print "                   \"jsr %%a6@(-$bias:W)\\n\"\\\n";
 
       if ($uses_a4 && $forced_a4 == 2) {
-          print "                   \"exg %%d6,%%a4\\n\"\n";
+          print "                   \"exg %%d6,%%a4\\n\"\\\n";
       }
 
       if ($uses_a5) {
-          print "                   \"exg %%d7,%%a5\\n\"\n";
+          print "                   \"exg %%d7,%%a5\\n\"\\\n";
       }
 
       # outputs
@@ -620,26 +628,37 @@ BEGIN {
       }
       
       if (@all_outputs) {
-          print "                   : " . join(", ", @all_outputs) . "\n";
+          print "                   : " . join(", ", @all_outputs) . "\\\n";
       } else {
-          print "                   :\n";
+          print "                   :\\\n";
       }
 
       # inputs
-      print "                   : " . join(", ", @inputs) . "\n";
+      print "                   : " . join(", ", @inputs) . "\\\n";
 
       # clobbers
       if (@clobbers) {
-          print "                   : \"" . join("\", \"", @clobbers) . "\" );\n";
+          print "                   : \"" . join("\", \"", @clobbers) . "\" );\\\n";
       } else {
-          print "                   : );\n";
+          print "                   : );\\\n";
       }
 
       if ($is_void) {
-          print "}\n\n";
+          print "})\n\n";
       } else {
-          print "  return __v_ret;\n}\n\n";
+          print "  __v_ret;})\n\n";
       }
+
+      # Generate the public macro that sets up a6
+      print "#define $fname(";
+      print join(", ", @names);
+      print ") ({\\\n";
+      print "  register void *const __v_base __asm(\"a6\") = $base_macro;\\\n";
+      print "  __asm volatile(\"\"::\"a\"(__v_base));\\\n";
+      print "  __${fname}_base(";
+      print join(", ", @names);
+      print ");\\\n";
+      print "})\n\n";
       
       $self->generate_aliases(%params);
     }
