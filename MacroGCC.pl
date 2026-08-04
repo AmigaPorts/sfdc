@@ -3,8 +3,9 @@ BEGIN {
     use vars qw(@ISA);
     @ISA = qw( Macro );   # reuse ctor/header/footer from Macro
 
-    # In the package scope, keep track of the last non-varargs function name
+    # In the package scope, keep track of the last non-varargs function
     our $LAST_FUNCTION_NAME = '';
+    our $LAST_FUNCTION_PARAM_COUNT = 0;
 
     sub rewrite_type_for_declaration {
         my ($type, $name) = @_;
@@ -143,7 +144,7 @@ BEGIN {
         my @types = @{$$p{'argtypes'}};
         my @names = @{$$p{'___argnames'}};
         
-        # Clean parameters
+        # Clean parameters - remove "..."
         my ($clean_types, $clean_names) = $self->clean_parameters(\@types, \@names);
         @types = @$clean_types;
         @names = @$clean_names;
@@ -151,27 +152,34 @@ BEGIN {
         my $fixed_count = scalar(@names);
         my $is_void = ($ret =~ /^(VOID|void)$/);
         
-        # Derive TagList version:
-        # 1. If we have a stored function name, use it (OpenWorkbenchObjectA)
-        # 2. Else: Tags -> TagList (AllocDosObjectTags -> AllocDosObjectTagList)
+        # Get the base function name
         my $taglist_fname = $LAST_FUNCTION_NAME;
         if (!$taglist_fname) {
             $taglist_fname = $fname;
             if ($fname =~ /Tags$/) {
                 $taglist_fname =~ s/Tags$/TagList/;
             } else {
-                # Fallback: append A
                 $taglist_fname .= 'A';
             }
         }
         
+        # Determine how many fixed parameters to pass to the base function:
+        # - If varargs has SAME number of fixed params as base: last fixed param is the first tag (exclude it)
+        # - If varargs has FEWER fixed params than base: all fixed params are real params (include all)
+        my $pass_count = $fixed_count;
+        if ($fixed_count == $LAST_FUNCTION_PARAM_COUNT) {
+            $pass_count = $fixed_count - 1;
+        }
+        
+        # Build parameter lists
+        my @param_decl = map { "$types[$_] $names[$_]" } (0 .. $fixed_count-1);
+        my @param_names = @names;
+        my @pass_names = @names[0 .. $pass_count-1];
+        
         # Emit static helper definition
         print "__attribute__((noinline))\n";
         print "static __stdargs $ret __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$types[$i] $names[$i]";
-            print ", " if $i < $fixed_count-1;
-        }
+        print join(", ", @param_decl);
         print ", ...)\n{\n";
         
         my $last_fixed = $names[$fixed_count-1];
@@ -183,8 +191,8 @@ BEGIN {
             print "    return $taglist_fname(";
         }
         
-        for my $i (0 .. $fixed_count-2) {
-            print "$names[$i]";
+        print join(", ", @pass_names);
+        if (@pass_names) {
             print ", ";
         }
         print "(CONST struct TagItem *)tags);\n";
@@ -192,12 +200,14 @@ BEGIN {
         
         # Emit macro wrapper
         print "#define $fname(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$names[$i], ";
+        print join(", ", @param_names);
+        if (@param_names) {
+            print ", ";
         }
         print "...) __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$names[$i], ";
+        print join(", ", @param_names);
+        if (@param_names) {
+            print ", ";
         }
         print "__VA_ARGS__)\n\n";
     }
@@ -222,14 +232,15 @@ BEGIN {
         # Derive V version name
         my $v_fname = "V$fname";
         
+        # Build parameter lists
+        my @param_decl = map { "$types[$_] $names[$_]" } (0 .. $fixed_count-1);
+        my @param_names = @names;
+        
         # Emit helper definition with actual parameter names
         print "__attribute__((noinline))\n";
         print "static __stdargs $ret __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$types[$i] $names[$i]";
-            print ", " 
-        }
-        print "...)\n{\n";
+        print join(", ", @param_decl);
+        print ", ...)\n{\n";
         
         # Get the last fixed parameter name
         my $last_fixed = $names[$fixed_count-1];
@@ -245,22 +256,23 @@ BEGIN {
             print "    return $v_fname(";
         }
         
-        # Call the V version with the actual parameter names
-        for my $i (0 .. $fixed_count-1) {
-            print "$names[$i]";
-            print ", " if $i < $fixed_count-1;
+        print join(", ", @param_names);
+        if (@param_names) {
+            print ", ";
         }
-        print ", args);\n";
+        print "args);\n";
         print "}\n\n";
         
         # Emit macro wrapper with actual parameter names
         print "#define $fname(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$names[$i], ";
+        print join(", ", @param_names);
+        if (@param_names) {
+            print ", ";
         }
         print "...) __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$names[$i], ";
+        print join(", ", @param_names);
+        if (@param_names) {
+            print ", ";
         }
         print "__VA_ARGS__)\n\n";
     }
@@ -281,14 +293,15 @@ BEGIN {
         
         my $fixed_count = scalar(@names);
         my $is_void = ($ret =~ /^(VOID|void)$/);
+        
+        # Build parameter lists
+        my @param_decl = map { "$types[$_] $names[$_]" } (0 .. $fixed_count-1);
+        my @param_names = @names;
      
         # Emit helper definition
         print "__attribute__((noinline))\n";
         print "static __stdargs $ret __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$types[$i] $names[$i]";
-            print ", " if $i < $fixed_count-1;
-        }
+        print join(", ", @param_decl);
         print ", ...)\n{\n";
         
         print "    LONG args[5] = {0, 0, 0, 0, 0};\n";
@@ -310,11 +323,11 @@ BEGIN {
             print "    return DoPkt(";
         }
         
-        for my $i (0 .. $fixed_count-1) {
-            print "$names[$i]";
-            print ", " if $i < $fixed_count-1;
+        print join(", ", @param_names);
+        if (@param_names) {
+            print ", ";
         }
-        print ", args[0], args[1], args[2], args[3], args[4]);\n";
+        print "args[0], args[1], args[2], args[3], args[4]);\n";
         print "}\n\n";
     }
 
@@ -348,11 +361,8 @@ BEGIN {
             
             # Create inline wrapper function
             print "static inline $ret __${alias_name}(";
-            for my $i (0 .. $#alias_types) {
-                my $decl = rewrite_type_for_declaration($alias_types[$i], $alias_names[$i]);
-                print $decl;
-                print ", " if $i < $#alias_types;
-            }
+            my @alias_decl = map { rewrite_type_for_declaration($alias_types[$_], $alias_names[$_]) } (0 .. $#alias_types);
+            print join(", ", @alias_decl);
             print ") {\n";
             print "    return $main_name(";
             print join(", ", @alias_names);
@@ -395,8 +405,9 @@ BEGIN {
           return;
       }
 
-      # Store this function name for potential varargs that follow
+      # Store this function name and param count for potential varargs that follow
       $LAST_FUNCTION_NAME = $fname;
+      $LAST_FUNCTION_PARAM_COUNT = scalar(@types);
 
       my $forced_a4 = $params{'forced_a4'} // 0;
 
@@ -424,11 +435,8 @@ BEGIN {
       print ")\n";
 
       print "static inline $ret __$$p{'funcname'}(";
-      for my $i (0 .. $#types) {
-          my $decl = rewrite_type_for_declaration($types[$i], $names[$i]);
-          print $decl;
-          print ", " if $i < $#types;
-      }
+      my @decls = map { rewrite_type_for_declaration($types[$_], $names[$_]) } (0 .. $#types);
+      print join(", ", @decls);
       print ") {\n";
 
       # Return register (always create for non-void)
