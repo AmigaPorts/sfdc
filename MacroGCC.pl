@@ -226,7 +226,7 @@ BEGIN {
         if (@param_names) {
             print ", ";
         }
-        print "__VA_ARGS__)\n\n";
+        print "## __VA_ARGS__)\n\n";
     }
 
     # Generate Format String varargs helper
@@ -292,7 +292,7 @@ BEGIN {
         if (@param_names) {
             print ", ";
         }
-        print "__VA_ARGS__)\n\n";
+        print "## __VA_ARGS__)\n\n";
     }
 
     # Generate Multi-Arg varargs helper (for DoPkt family)
