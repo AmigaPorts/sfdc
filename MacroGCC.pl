@@ -155,15 +155,8 @@ BEGIN {
             }
         }
         
-        # Emit static helper declaration
-        print "static __stdargs $ret __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$types[$i] $names[$i]";
-            print ", ";
-        }
-        print "...);\n\n";
-        
         # Emit static helper definition
+        print "__attribute__((noinline))\n";
         print "static __stdargs $ret __${fname}_va(";
         for my $i (0 .. $fixed_count-1) {
             print "$types[$i] $names[$i]";
@@ -219,15 +212,8 @@ BEGIN {
         # Derive V version name
         my $v_fname = "V$fname";
         
-        # Emit helper declaration with actual parameter names
-        print "static __stdargs $ret __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$types[$i] $names[$i]";
-            print ", " if $i < $fixed_count-1;
-        }
-        print ", ...);\n\n";
-        
         # Emit helper definition with actual parameter names
+        print "__attribute__((noinline))\n";
         print "static __stdargs $ret __${fname}_va(";
         for my $i (0 .. $fixed_count-1) {
             print "$types[$i] $names[$i]";
@@ -285,16 +271,9 @@ BEGIN {
         
         my $fixed_count = scalar(@names);
         my $is_void = ($ret =~ /^(VOID|void)$/);
-
-        # Emit helper declaration
-        print "static __stdargs $ret __${fname}_va(";
-        for my $i (0 .. $fixed_count-1) {
-            print "$types[$i] $names[$i]";
-            print ", " if $i < $fixed_count-1;
-        }
-        print ", ...);\n\n";
-        
+     
         # Emit helper definition
+        print "__attribute__((noinline))\n";
         print "static __stdargs $ret __${fname}_va(";
         for my $i (0 .. $fixed_count-1) {
             print "$types[$i] $names[$i]";
@@ -464,16 +443,32 @@ BEGIN {
 
           # Clean the type for register declaration
           my $clean_type = $types[$i];
+          my $original_type = $types[$i];
+          
+          # Check if we stripped anything
+          my $stripped = 0;
+          
           # Remove "const" or "CONST" (with optional trailing space)
-          $clean_type =~ s/^\s*(const|CONST)\s+//;
+          if ($clean_type =~ s/^\s*(const|CONST)\s+//) {
+              $stripped = 1;
+          }
           # Remove "CONST_" prefix
-          $clean_type =~ s/^CONST_//;
+          if ($clean_type =~ s/^CONST_//) {
+              $stripped = 1;
+          }
 
           my $decl = rewrite_type_for_declaration($clean_type, "__v$i");
-          print "  register $decl __asm(\"$bind_reg\") = $names[$i];\n";
+          
+          # If we stripped const, cast the value to the cleaned type
+          if ($stripped) {
+              print "  register $decl __asm(\"$bind_reg\") = ($clean_type)$names[$i];\n";
+          } else {
+              print "  register $decl __asm(\"$bind_reg\") = $names[$i];\n";
+          }
+          
           $used_regs{$bind_reg} = 1;
       }
-
+      
       my @clobbers = ("fp0", "fp1", "cc", "memory");
       
       # d0 is only clobbered if void (no return value)
