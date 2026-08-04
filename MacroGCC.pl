@@ -6,6 +6,7 @@ BEGIN {
     # In the package scope, keep track of the last non-varargs function
     our $LAST_FUNCTION_NAME = '';
     our $LAST_FUNCTION_PARAM_COUNT = 0;
+    our $LAST_FUNCTION_LAST_TYPE = '';
 
     sub rewrite_type_for_declaration {
         my ($type, $name) = @_;
@@ -176,6 +177,10 @@ BEGIN {
         my @param_names = @names;
         my @pass_names = @names[0 .. $pass_count-1];
         
+        # The array pointer must have the type of the base function's last
+        # parameter (e.g. DoGadgetMethodA takes Msg, not a TagItem list).
+        my $cast = $LAST_FUNCTION_LAST_TYPE || 'CONST struct TagItem *';
+
         # Emit static helper definition. noipa, not just noinline: the helper
         # relies on the caller having pushed the variadic arguments after the
         # named ones, and IPA constant propagation may clone it with the
@@ -207,7 +212,7 @@ BEGIN {
         if (@pass_names) {
             print ", ";
         }
-        print "(CONST struct TagItem *)tags);\n";
+        print "($cast)tags);\n";
         print "}\n\n";
         
         # Emit macro wrapper
@@ -422,6 +427,7 @@ BEGIN {
       # Store this function name and param count for potential varargs that follow
       $LAST_FUNCTION_NAME = $fname;
       $LAST_FUNCTION_PARAM_COUNT = scalar(@types);
+      $LAST_FUNCTION_LAST_TYPE = @types ? $types[-1] : '';
 
       my $forced_a4 = $params{'forced_a4'} // 0;
 
