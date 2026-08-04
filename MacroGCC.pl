@@ -176,8 +176,12 @@ BEGIN {
         my @param_names = @names;
         my @pass_names = @names[0 .. $pass_count-1];
         
-        # Emit static helper definition
-        print "__attribute__((noinline))\n";
+        # Emit static helper definition. noipa, not just noinline: the helper
+        # relies on the caller having pushed the variadic arguments after the
+        # named ones, and IPA constant propagation may clone it with the
+        # variadic part specialized away, which breaks the stack layout the
+        # same way inlining does.
+        print "__attribute__((noipa))\n";
         print "static __stdargs $ret __${fname}_va(";
         print join(", ", @param_decl);
         print ", ...)\n{\n";
@@ -237,7 +241,8 @@ BEGIN {
         my @param_names = @names;
         
         # Emit helper definition with actual parameter names
-        print "__attribute__((noinline))\n";
+        # noipa, not just noinline: see generate_taglist_varargs.
+        print "__attribute__((noipa))\n";
         print "static __stdargs $ret __${fname}_va(";
         print join(", ", @param_decl);
         print ", ...)\n{\n";
@@ -299,7 +304,8 @@ BEGIN {
         my @param_names = @names;
      
         # Emit helper definition
-        print "__attribute__((noinline))\n";
+        # noipa, not just noinline: see generate_taglist_varargs.
+        print "__attribute__((noipa))\n";
         print "static __stdargs $ret __${fname}_va(";
         print join(", ", @param_decl);
         print ", ...)\n{\n";
