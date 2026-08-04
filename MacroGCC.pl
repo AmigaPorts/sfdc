@@ -187,7 +187,15 @@ BEGIN {
         print ", ...)\n{\n";
         
         my $last_fixed = $names[$fixed_count-1];
-        print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
+        if ($pass_count == $fixed_count) {
+            # All fixed parameters are real parameters of the base function,
+            # so the array starts at the first variadic slot, one past the
+            # last named one (e.g. EasyRequest's format arguments).
+            print "    const ULONG *tags = (const ULONG *)(&$last_fixed + 1);\n";
+        } else {
+            # The last fixed parameter is the first array element.
+            print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
+        }
         
         if ($is_void) {
             print "    $taglist_fname(";
@@ -250,10 +258,10 @@ BEGIN {
         # Get the last fixed parameter name
         my $last_fixed = $names[$fixed_count-1];
         
-        # With __stdargs, all parameters are on the stack.
-        # The address of the last fixed parameter + 1 gives us
-        # the start of the varargs on the stack.
-        print "    const void *args = (const void *)&$last_fixed + 1;\n";
+        # With __stdargs, all parameters are on the stack: the slot after the
+        # last fixed parameter is the start of the varargs. The +1 must apply
+        # to the typed pointer, not the void pointer (that would add 1 byte).
+        print "    const void *args = (const void *)(&$last_fixed + 1);\n";
         
         if ($is_void) {
             print "    $v_fname(";
