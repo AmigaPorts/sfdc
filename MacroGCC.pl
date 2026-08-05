@@ -35,6 +35,21 @@ BEGIN {
       print "#include <proto/$$sfd{'basename'}.h>\n";
       print "#endif\n\n";
       
+      print <<'EOF';
+#if defined(__GNUC__)
+# if (__GNUC__ >= 8)
+#  define AMIGA_VA_WRAPPER_ATTR \
+    __attribute__((noipa, noinline, optimize("omit-frame-pointer"), optimize("O1")))
+# else
+#  define AMIGA_VA_WRAPPER_ATTR \
+    __attribute__((noinline, optimize("omit-frame-pointer"), optimize("O1")))
+# endif
+#else
+# define AMIGA_VA_WRAPPER_ATTR
+#endif
+
+EOF
+      
       if ($$sfd{'base'} ne '') {
           print "#ifndef $self->{BASE}\n";
           print "#define $self->{BASE} $$sfd{'base'}\n";
@@ -185,7 +200,7 @@ BEGIN {
         my $base_macro = $self->{BASE};
 
         # Emit static helper definition - base is first parameter in a6
-        print "__attribute__((noinline, optimize(\"omit-frame-pointer\"), optimize(\"O1\")))\n";
+        print "AMIGA_VA_WRAPPER_ATTR\n";
         print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
         if (@param_decl) {
             print ", ";
@@ -209,9 +224,9 @@ BEGIN {
         push @call_args, "($cast)tags";
         
         if ($is_void) {
-            print "    __${taglist_fname}_base(" . join(", ", @call_args) . ");\n";
+            print "    __${taglist_fname}_base(__base, " . join(", ", @call_args) . ");\n";
         } else {
-            print "    return __${taglist_fname}_base(" . join(", ", @call_args) . ");\n";
+            print "    return __${taglist_fname}_base(__base, " . join(", ", @call_args) . ");\n";
         }
         print "}\n\n";
         
@@ -247,7 +262,7 @@ BEGIN {
         my $base_macro = $self->{BASE};
 
         # Emit helper definition
-        print "__attribute__((noinline, optimize(\"omit-frame-pointer\"), optimize(\"O1\")))\n";
+        print "AMIGA_VA_WRAPPER_ATTR\n";
         print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
         if (@param_decl) {
             print ", ";
@@ -266,9 +281,9 @@ BEGIN {
         push @call_args, "args";
 
         if ($is_void) {
-            print "    __${v_fname}_base(" . join(", ", @call_args) . ");\n";
+            print "    __${v_fname}_base(__base, " . join(", ", @call_args) . ");\n";
         } else {
-            print "    return __${v_fname}_base(" . join(", ", @call_args) . ");\n";
+            print "    return __${v_fname}_base(__base, " . join(", ", @call_args) . ");\n";
         }
         print "}\n\n";
         
@@ -314,7 +329,7 @@ BEGIN {
         my $base_macro = $self->{BASE};
      
         # Emit helper definition - base is first parameter in a6
-        print "__attribute__((noinline, optimize(\"omit-frame-pointer\"), optimize(\"O1\")))\n";
+        print "AMIGA_VA_WRAPPER_ATTR\n";
         print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
         if (@param_decl) {
             print ", ";
@@ -462,7 +477,10 @@ BEGIN {
       my $base_macro = $self->{BASE};
 
       # Generate the base inline assembly macro (__${fname}_base)
-      print "#define __${fname}_base(";
+      print "#define __${fname}_base(__in_base";
+      if (@names) {
+		print ", ";
+	  }
       print join(", ", @names);
       print ") ({\\\n";
 
@@ -476,6 +494,11 @@ BEGIN {
       # Check if any parameter uses a multi-register type
       my $uses_d1_for_param = 0;
       my $uses_a1_for_param = 0;
+      
+      my $uses_d1_for_return = 0;
+      if ($self->is_multi_register_type($ret)) {
+		$uses_d1_for_return = 1;
+	  }
       
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
@@ -557,7 +580,7 @@ BEGIN {
       }
       
       # d1 is clobbered if not used as a parameter AND not used by a multi-register type
-      if (!$used_regs{'d1'} && !$uses_d1_for_param) {
+      if (!$used_regs{'d1'} && !$uses_d1_for_param && !$uses_d1_for_return) {
           push @clobbers, "d1";
       }
       
@@ -573,6 +596,8 @@ BEGIN {
 
       my @inputs;
       my @outputs;
+      
+      push @inputs, "\"a\"(__in_base)";
       
       # Return register
       if (!$is_void) {
@@ -671,9 +696,11 @@ BEGIN {
       print "#define $fname(";
       print join(", ", @names);
       print ") ({\\\n";
-      print "  register void *const __v_base __asm(\"a6\") = $base_macro;\\\n";
-      print "  __asm volatile(\"\"::\"a\"(__v_base));\\\n";
-      print "  __${fname}_base(";
+      print "  register void * const __v_base __asm(\"a6\") = $base_macro;\\\n";
+      print "  __${fname}_base(__v_base";
+      if (@names) {
+        print ", ";
+      }
       print join(", ", @names);
       print ");\\\n";
       print "})\n\n";
