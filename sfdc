@@ -3703,7 +3703,7 @@ EOF
       
       # Return register
       if (!$is_void) {
-          push @outputs, "\"=r\"(__v_ret)";
+          push @outputs, "\"=d\"(__v_ret)";
       }
       
       # For each parameter
@@ -3746,7 +3746,7 @@ EOF
       # add dummy d1 output if d1 isn't already used as a parameter
       if ($d0_is_multi && !$is_void && !$d1_used_as_param) {
           print "  register LONG __v_d1 __asm(\"d1\");\\\n";
-          push @outputs, "\"=r\"(__v_d1)";
+          push @outputs, "\"=d\"(__v_d1)";
       }
 
       print "  __asm volatile (\\\n";
