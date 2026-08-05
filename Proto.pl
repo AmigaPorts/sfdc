@@ -33,6 +33,15 @@ BEGIN {
       print "\n";
 
       if ($base ne '') {
+          print "#if defined(_CONST_BASES)\n";
+		  print "# ifndef __CONSTLIBBASEDECL__\n";
+          print "# define __CONSTLIBBASEDECL__ const\n";
+          print "# endif /* __CONSTLIBBASEDECL__ */\n";
+		  print "# ifndef __SEGMENTLIBBASEDECL__\n";
+          print "# define __SEGMENTLIBBASEDECL__  __attribute__((__section__(\".data\")))\n";
+          print "# endif /* __SEGMENTLIBBASEDECL__ */\n";
+          print "#endif /* _CONST_BASES */\n";
+
           print "#ifdef __amigaos4__\n";
           print "# include <interfaces/${basename}.h>\n";
           print "# ifndef __NOGLOBALIFACE__\n";
@@ -44,7 +53,11 @@ BEGIN {
           print "# ifdef __CONSTLIBBASEDECL__\n";
           print "   __CONSTLIBBASEDECL__\n";
           print "# endif /* __CONSTLIBBASEDECL__ */\n";
-          print "  ${base};\n";
+          print "  ${base}\n";
+		  print "# ifdef __SEGMENTLIBBASEDECL__\n";
+          print " __SEGMENTLIBBASEDECL__\n";
+          print "# endif /* __SEGMENTLIBBASEDECL__ */\n";          
+          print ";\n";
           print "#endif /* !__NOLIBBASE__ */\n";
           print "\n";
       }
