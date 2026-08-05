@@ -185,7 +185,7 @@ BEGIN {
         my $base_macro = $self->{BASE};
 
         # Emit static helper definition - base is first parameter in a6
-        print "__attribute__((noinline, optimize(\"omit-frame-pointer\")))\n";
+        print "__attribute__((noinline, optimize(\"omit-frame-pointer\"), optimize(\"O1\")))\n";
         print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
         if (@param_decl) {
             print ", ";
@@ -208,7 +208,6 @@ BEGIN {
         my @call_args = @pass_names;
         push @call_args, "($cast)tags";
         
-        print "    __asm volatile(\"\"::\"a\"(__base));\n";
         if ($is_void) {
             print "    __${taglist_fname}_base(" . join(", ", @call_args) . ");\n";
         } else {
@@ -248,8 +247,7 @@ BEGIN {
         my $base_macro = $self->{BASE};
 
         # Emit helper definition
-        print "__attribute__((noinline))\n";
-        print "__attribute__((optimize(\"omit-frame-pointer\")))\n";
+        print "__attribute__((noinline, optimize(\"omit-frame-pointer\"), optimize(\"O1\")))\n";
         print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
         if (@param_decl) {
             print ", ";
@@ -267,7 +265,6 @@ BEGIN {
         my @call_args = @param_names;
         push @call_args, "args";
 
-        print "    __asm volatile(\"\"::\"a\"(__base));\n";
         if ($is_void) {
             print "    __${v_fname}_base(" . join(", ", @call_args) . ");\n";
         } else {
@@ -317,8 +314,7 @@ BEGIN {
         my $base_macro = $self->{BASE};
      
         # Emit helper definition - base is first parameter in a6
-        print "__attribute__((noinline))\n";
-        print "__attribute__((optimize(\"omit-frame-pointer\")))\n";
+        print "__attribute__((noinline, optimize(\"omit-frame-pointer\"), optimize(\"O1\")))\n";
         print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
         if (@param_decl) {
             print ", ";
@@ -341,7 +337,6 @@ BEGIN {
         my @call_args = @param_names;
         push @call_args, "args[0], args[1], args[2], args[3], args[4]";
         
-        print "    __asm volatile(\"\"::\"a\"(__base));\n";
         if ($is_void) {
             print "    DoPkt(" . join(", ", @call_args) . ");\n";
         } else {
@@ -467,7 +462,6 @@ BEGIN {
       my $base_macro = $self->{BASE};
 
       # Generate the base inline assembly macro (__${fname}_base)
-      # Takes __v_base as first parameter, then all original parameters
       print "#define __${fname}_base(";
       print join(", ", @names);
       print ") ({\\\n";
@@ -501,6 +495,20 @@ BEGIN {
           if (($bind_reg eq 'a0' || $bind_reg eq 'a1') && 
               $self->is_multi_register_type($types[$i])) {
               $uses_a1_for_param = 1;
+          }
+      }
+
+      # Check if d0 is used with a multi-register type AND we have a return value
+      my $d0_is_multi = 0;
+      my $d1_used_as_param = 0;
+      for my $i (0 .. $#types) {
+          my $r = $regs[$i];
+          next unless defined $r && $r ne '';
+          if ($r eq 'd0' && $self->is_multi_register_type($types[$i])) {
+              $d0_is_multi = 1;
+          }
+          if ($r eq 'd1') {
+              $d1_used_as_param = 1;
           }
       }
 
@@ -566,6 +574,12 @@ BEGIN {
       my @inputs;
       my @outputs;
       
+      # Return register
+      if (!$is_void) {
+          push @outputs, "\"=r\"(__v_ret)";
+      }
+      
+      # For each parameter
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
           next unless defined $r && $r ne '';
@@ -600,6 +614,13 @@ BEGIN {
               push @inputs, "\"$c\"(__v$i)";
           }
       }
+      
+      # If d0 is multi-register (DOUBLE) and we have a return value,
+      # add dummy d1 output if d1 isn't already used as a parameter
+      if ($d0_is_multi && !$is_void && !$d1_used_as_param) {
+          print "  register LONG __v_d1 __asm(\"d1\");\\\n";
+          push @outputs, "\"=r\"(__v_d1)";
+      }
 
       print "  __asm volatile (\\\n";
 
@@ -623,9 +644,6 @@ BEGIN {
 
       # outputs
       my @all_outputs = @outputs;
-      if (!$is_void) {
-          unshift @all_outputs, "\"=r\"(__v_ret)";
-      }
       
       if (@all_outputs) {
           print "                   : " . join(", ", @all_outputs) . "\\\n";
