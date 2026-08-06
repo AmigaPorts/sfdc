@@ -484,6 +484,16 @@ EOF
       print join(", ", @names);
       print ") ({\\\n";
 
+      # Evaluate all parameters into local variables FIRST
+      # This prevents function call parameters from being clobbered
+      # by register assignments for inline assembly.
+      for my $i (0 .. $#types) {
+          my $clean_type = $types[$i];
+          $clean_type =~ s/^\s*(const|CONST)\s+//;
+          $clean_type =~ s/^CONST_//;
+          print "  $clean_type __p_$names[$i] = ($clean_type)($names[$i]);\\\n";
+      }
+
       # Return register (always create for non-void)
       if (!$is_void) {
           print "  register $ret __v_ret __asm(\"d0\");\\\n";
@@ -535,7 +545,7 @@ EOF
           }
       }
 
-      # bind args to their registers
+      # bind args to their registers using the evaluated local variables
       for my $i (0 .. $#types) {
           my $r = $regs[$i];
           next unless defined $r && $r ne '';
@@ -547,27 +557,12 @@ EOF
 
           # Clean the type for register declaration
           my $clean_type = $types[$i];
-          
-          # Check if we stripped anything
-          my $stripped = 0;
-          
-          # Remove "const" or "CONST" (with optional trailing space)
-          if ($clean_type =~ s/^\s*(const|CONST)\s+//) {
-              $stripped = 1;
-          }
-          # Remove "CONST_" prefix
-          if ($clean_type =~ s/^CONST_//) {
-              $stripped = 1;
-          }
+          $clean_type =~ s/^\s*(const|CONST)\s+//;
+          $clean_type =~ s/^CONST_//;
 
           my $decl = rewrite_type_for_declaration($clean_type, "__v$i");
           
-          # If we stripped const, cast the value to the cleaned type
-          if ($stripped) {
-              print "  register $decl __asm(\"$bind_reg\") = ($clean_type)$names[$i];\\\n";
-          } else {
-              print "  register $decl __asm(\"$bind_reg\") = $names[$i];\\\n";
-          }
+          print "  register $decl __asm(\"$bind_reg\") = __p_$names[$i];\\\n";
           
           $used_regs{$bind_reg} = 1;
       }
@@ -596,8 +591,6 @@ EOF
 
       my @inputs;
       my @outputs;
-      
-      push @inputs, "\"a\"(__in_base)";
       
       # Return register
       if (!$is_void) {
@@ -696,7 +689,7 @@ EOF
       print "#define $fname(";
       print join(", ", @names);
       print ") ({\\\n";
-      print "  register void * const __v_base __asm(\"a6\") = $base_macro;\\\n";
+      print "  register void *const __v_base __asm(\"a6\") = $base_macro;\\\n";
       print "  __${fname}_base(__v_base";
       if (@names) {
         print ", ";
