@@ -3593,7 +3593,13 @@ EOF
           my $clean_type = $types[$i];
           $clean_type =~ s/^\s*(const|CONST)\s+//;
           $clean_type =~ s/^CONST_//;
-          print "  $clean_type __p_$names[$i] = ($clean_type)($names[$i]);\\\n";
+          
+          # For function pointer types, use void * to avoid declaration syntax issues
+          if ($clean_type =~ /\(\s*\*\s*\)\s*\(/) {
+              print "  void *__p_$names[$i] = (void *)($names[$i]);\\\n";
+          } else {
+              print "  $clean_type __p_$names[$i] = ($clean_type)($names[$i]);\\\n";
+          }
       }
 
       # Return register (always create for non-void)
