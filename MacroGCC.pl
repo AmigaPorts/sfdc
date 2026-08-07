@@ -597,7 +597,13 @@ EOF
 
       my @inputs;
       my @outputs;
-      
+
+      # The base must be an input of the same asm statement as the jsr:
+      # __v_base's liveness alone does not reach it, and without the
+      # operand gcc is free to reuse a6 as scratch between the outer
+      # macro and the call.
+      push @inputs, "\"a\"(__in_base)";
+
       # Return register
       if (!$is_void) {
           push @outputs, "\"=d\"(__v_ret)";
