@@ -231,7 +231,7 @@ EOF
 
         # Emit static helper definition - base is first parameter in a6
         print "AMIGA_VA_WRAPPER_ATTR\n";
-        print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
+        print "static __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
         if (@param_decl) {
             print ", ";
         }
@@ -293,7 +293,7 @@ EOF
 
         # Emit helper definition
         print "AMIGA_VA_WRAPPER_ATTR\n";
-        print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
+        print "static __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
         if (@param_decl) {
             print ", ";
         }
@@ -360,7 +360,7 @@ EOF
      
         # Emit helper definition - base is first parameter in a6
         print "AMIGA_VA_WRAPPER_ATTR\n";
-        print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
+        print "static __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
         if (@param_decl) {
             print ", ";
         }
@@ -513,7 +513,7 @@ EOF
 	  }
       print join(", ", @names);
       print ") ({\\\n";
-
+      print "  register void * __p__in_base __asm(\"a6\") = (void *)(__in_base);\\\n";
       # Evaluate all parameters into local variables FIRST
       # This prevents function call parameters from being clobbered
       # by register assignments for inline assembly.
@@ -632,7 +632,7 @@ EOF
       # __v_base's liveness alone does not reach it, and without the
       # operand gcc is free to reuse a6 as scratch between the outer
       # macro and the call.
-      push @inputs, "\"a\"(__in_base)";
+      push @inputs, "\"a\"(__p__in_base)";
 
       # Return register
       if (!$is_void) {
