@@ -199,6 +199,36 @@ EOF
         # Get base macro name
         my $base_macro = $self->{BASE};
 
+		if ($fname eq 'MUI_NewObject') {
+		    print "AMIGA_VA_WRAPPER_ATTR\n";
+		    print "static __stdargs $ret __${fname}_va(";
+		    print join(", ", @param_decl);
+		    print ", ...)\n{\n";
+
+		    my $last_fixed = $names[$fixed_count-1];
+
+		    if ($pass_count == $fixed_count) {
+		        print "    const ULONG *tags = (const ULONG *)(&$last_fixed + 1);\n";
+		    } else {
+		        print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
+		    }
+
+		    my @call_args = @pass_names;
+		    push @call_args, "($cast)tags";
+
+		    if ($is_void) {
+		        print "    __${taglist_fname}_base($base_macro, " .
+		              join(", ", @call_args) . ");\n";
+		    } else {
+		        print "    return __${taglist_fname}_base($base_macro, " .
+		              join(", ", @call_args) . ");\n";
+		    }
+
+		    print "}\n\n";
+		    print "#define $fname __${fname}_va\n\n";
+		    return;
+		}
+
         # Emit static helper definition - base is first parameter in a6
         print "AMIGA_VA_WRAPPER_ATTR\n";
         print "static __stdargs $ret __${fname}_va(void *const __base asm(\"a6\")";
