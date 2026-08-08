@@ -731,8 +731,7 @@ EOF
       print "#define $fname(";
       print join(", ", @names);
       print ") ({\\\n";
-      print "  register void *const __v_base __asm(\"a6\") = $base_macro;\\\n";
-      print "  __${fname}_base(__v_base";
+      print "  __${fname}_base(($base_macro)";
       if (@names) {
         print ", ";
       }
