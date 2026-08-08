@@ -282,7 +282,7 @@ EOF
         my $is_void = ($ret =~ /^(VOID|void)$/);
         
         # Derive V version name
-        my $v_fname = "V$fname";
+        my $v_fname = $LAST_FUNCTION_NAME;
         
         # Build parameter lists
         my @param_decl = map { "$types[$_] $names[$_]" } (0 .. $fixed_count-1);
