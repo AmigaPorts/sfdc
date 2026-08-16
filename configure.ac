@@ -1,6 +1,6 @@
 # Versioning
 m4_define([v_maj], [1])
-m4_define([v_min], [11d])
+m4_define([v_min], [11g])
 m4_define([project_version], [v_maj.v_min])
 
 # Process this file with autoconf to produce a configure script.

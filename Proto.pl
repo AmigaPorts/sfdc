@@ -31,6 +31,37 @@ BEGIN {
       print "\n";
       print "#include <clib/${basename}_protos.h>\n";
       print "\n";
+
+      if ($base ne '') {
+          print "#if defined(_CONST_BASES)\n";
+		  print "# ifndef __CONSTLIBBASEDECL__\n";
+          print "# define __CONSTLIBBASEDECL__ const\n";
+          print "# endif /* __CONSTLIBBASEDECL__ */\n";
+		  print "# ifndef __SEGMENTLIBBASEDECL__\n";
+          print "# define __SEGMENTLIBBASEDECL__  __attribute__((__section__(\".data\")))\n";
+          print "# endif /* __SEGMENTLIBBASEDECL__ */\n";
+          print "#endif /* _CONST_BASES */\n";
+
+          print "#ifdef __amigaos4__\n";
+          print "# include <interfaces/${basename}.h>\n";
+          print "# ifndef __NOGLOBALIFACE__\n";
+          print "   extern struct ${BaseName}IFace *I${BaseName};\n";
+          print "# endif /* __NOGLOBALIFACE__*/\n";
+          print "#endif /* !__amigaos4__ */\n";
+          print "#ifndef __NOLIBBASE__\n";
+          print "  extern ${basetype}\n";
+          print "# ifdef __CONSTLIBBASEDECL__\n";
+          print "   __CONSTLIBBASEDECL__\n";
+          print "# endif /* __CONSTLIBBASEDECL__ */\n";
+          print "  ${base}\n";
+		  print "# ifdef __SEGMENTLIBBASEDECL__\n";
+          print " __SEGMENTLIBBASEDECL__\n";
+          print "# endif /* __SEGMENTLIBBASEDECL__ */\n";          
+          print ";\n";
+          print "#endif /* !__NOLIBBASE__ */\n";
+          print "\n";
+      }
+
       print "#ifndef _NO_INLINE\n";
       print "# if defined(__GNUC__)\n";
       print "#  ifdef __AROS__\n";
@@ -43,23 +74,6 @@ BEGIN {
       print "# endif\n";
       print "#endif /* _NO_INLINE */\n";
       print "\n";
-
-      if ($base ne '') {
-          print "#ifdef __amigaos4__\n";
-          print "# include <interfaces/${basename}.h>\n";
-          print "# ifndef __NOGLOBALIFACE__\n";
-          print "   extern struct ${BaseName}IFace *I${BaseName};\n";
-          print "# endif /* __NOGLOBALIFACE__*/\n";
-          print "#endif /* !__amigaos4__ */\n";
-          print "#ifndef __NOLIBBASE__\n";
-          print "  extern ${basetype}\n";
-          print "# ifdef __CONSTLIBBASEDECL__\n";
-          print "   __CONSTLIBBASEDECL__\n";
-          print "# endif /* __CONSTLIBBASEDECL__ */\n";
-          print "  ${base};\n";
-          print "#endif /* !__NOLIBBASE__ */\n";
-          print "\n";
-      }
     }
 
     sub function {

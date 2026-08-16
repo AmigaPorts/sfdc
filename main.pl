@@ -141,6 +141,14 @@ my %targets = (
              gatestubs => 'Gate68k',
              interface => 'Interface'
              },
+             'm68k-gcc-amigaos' =>
+             { target    => 'amigaos',
+             vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
+             macros    => 'MacroGCC',
+             stubs     => 'Stub68k',
+             gatestubs => 'Gate68k',
+             interface => 'Interface'
+             },
             'm68kvbcc(-unknown)?-amigaos' =>
              { target    => 'amigaosvbcc',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -229,7 +237,7 @@ if ($#ARGV < 0) {
 
 $mode = lc $mode;
 
-if (!($mode =~ /^(autoopen|clib|dump|fd|functable|libproto|lvo|interface|macros|proto|pragmas|stubs|gateproto|gatestubs|verify)$/)) {
+if (!($mode =~ /^(autoopen|clib|dump|fd|functable|libproto|lvo|interface|macros|gcc-inline|proto|pragmas|stubs|gateproto|gatestubs|verify)$/)) {
     pod2usage (-message => "Unknown mode specified. Use --help for a list.",
              -verbose => 0,
              -exitval => 10);
@@ -317,6 +325,11 @@ for my $i ( 0 .. $#ARGV ) {
 #         @{$$sfd{'prototypes'}} = sort {
 #           $$a{'funcname'} cmp $$b{'funcname'}
 #         } @{$$sfd{'prototypes'}};
+          last;
+      };
+
+      /^gcc-inline$/ && do {
+          $obj = $$classes{'gcc-inline'}->new( sfd => $sfd );
           last;
       };
 
