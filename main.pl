@@ -39,6 +39,7 @@ if ($@) {
 
       sub pod2usage {
           my @params = @_;
+
           my $verbose = 0;
           my $exitval = 0;
           my $message = "";
@@ -52,6 +53,7 @@ if ($@) {
                 /^-output$/  && do { $output  = shift @params};
             }
           }
+
           print $output "$message\n" if $message;
           print $output "\n";
           print $output "Perl module Pod::Usage is missing.\n";
@@ -61,6 +63,7 @@ if ($@) {
       }
     ';
 }
+
 sub parse_sfd ( $ );
 sub parse_proto ( $$$ );
 sub open_output ( $$ );
@@ -117,6 +120,7 @@ my %targets = (
              gatestubs => 'Gate',
              interface => 'Interface'
              },
+
             '(\w)+(-.*)?-aros' =>
              { target    => 'aros',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -125,6 +129,7 @@ my %targets = (
              gatestubs => 'GateAROS',
              interface => 'Interface'
              },
+
             'i.86be(-pc)?-amithlon' =>
              { target    => 'amithlon',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -133,6 +138,7 @@ my %targets = (
              gatestubs => 'GateAmithlon',
              interface => 'Interface'
              },
+
             'm68k(-unknown)?-amigaos' =>
              { target    => 'amigaos',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -157,6 +163,7 @@ my %targets = (
              gatestubs => 'Gate',
              interface => 'Interface'
              },
+
             'p(ower)?pc(-unknown)?-amigaos' =>
              { target    => 'amigaos4',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -165,6 +172,7 @@ my %targets = (
              gatestubs => 'GateAOS4',
              interface => 'InterfaceAOS4'
              },
+
             'p(ower)?pc(-unknown)?-morphos' =>
              { target    => 'morphos',
              vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
@@ -489,6 +497,7 @@ sub parse_sfd ( $ ) {
 
       ++$line_no;
       $line =~ s/\r//g;
+
       for ($line) {
           /==copyright\s/ && do {
             ( $$result{'copyright'} = $_ ) =~ s/==copyright\s+(.*)\s*/$1/;
@@ -528,6 +537,7 @@ sub parse_sfd ( $ ) {
             push @{$$result{'typedefs'}}, $td;
             last;
           };
+
           /==bias\s+/ && do {
             ( $bias = $_ ) =~ s/==bias\s+(.*)\s*/$1/;
             last;
@@ -553,6 +563,7 @@ sub parse_sfd ( $ ) {
             $bias -= 6;
             last;
           };
+
           /==private\s*$/ && do {
             $private = 1;
             last;
@@ -567,15 +578,18 @@ sub parse_sfd ( $ ) {
             ( $version = $_ ) =~ s/==version\s+(.*)\s*/$1/;
             last;
           };
+
           /==end\s*$/ && do {
             last LINE;
           };
+
           /^\*/ && do {
             ( my $cmt = $_ ) =~ s/^\*(.*)\s*/$1/;
 
             $comment .= ($comment eq '' ? "" : "\n" ) . $cmt;
             last;
           };
+
           /^[^=*\n]/ && do {
             # Strip whitespaces and append
             $line =~ s/\s*(.*)\s*/$1/;
@@ -650,6 +664,7 @@ sub parse_sfd ( $ ) {
           $$prototype{'real_funcname'}  = '';
           $$prototype{'real_prototype'} = '';
       }
+
       parse_proto ($result, $prototype, $varargs_type);
 
       if ($$prototype{'type'} eq 'function') {
@@ -688,9 +703,9 @@ sub parse_sfd ( $ ) {
     }
 
     $$result{'basename'} =~ s/-/_/g;
-    $$result{'basename'} = lc $$result{'basename'};
     $$result{'BASENAME'} = uc $$result{'basename'};
-    $$result{'Basename'} = ucfirst $$result{'basename'};
+    $$result{'Basename'} = lc $$result{'basename'};
+    $$result{'Basename'} = ucfirst $$result{'Basename'};
     ($result->{BaseName} = $result->{base}) =~ s/Base//;
 
     return $result;
@@ -716,7 +731,7 @@ sub parse_proto ( $$$ ) {
 
 #	print STDERR "->" . $$prototype{'value'} . "\n";
 
-	# eliminate double spaces
+	# eliminate double spaces 
     $$prototype{'value'} =~ s/\s+/ /g;
 	# eliminate spaces befor registers
     $$prototype{'value'} =~ s/,\s+([ad][0-7])/,${1}/g;
@@ -729,7 +744,7 @@ sub parse_proto ( $$$ ) {
 	# insert space between )(
 #    $$prototype{'value'} =~ s/\)\(/\) \(/g;
 	# insert space after * if missing
-    $$prototype{'value'} =~ s/\*(\S)/\* ${1}/g;
+#    $$prototype{'value'} =~ s/\*(\S)/\* ${1}/g;
 
 #	print STDERR "->" . $$prototype{'value'} . "\n";
 	
@@ -759,6 +774,7 @@ sub parse_proto ( $$$ ) {
 
     $$prototype{'numargs'}  = 0;
     $$prototype{'numregs'}  = 0;
+
     @{$$prototype{'regs'}}        = ();
     @{$$prototype{'args'}}        = ();
     @{$$prototype{'___args'}}     = ();
@@ -781,6 +797,7 @@ sub parse_proto ( $$$ ) {
 
       if ($par_cnt != 0) {
           my $old_arg = pop @{$$prototype{'args'}};
+
           push @{$$prototype{'args'}}, $old_arg . "," . $arg;
       }
       else {
@@ -812,6 +829,7 @@ sub parse_proto ( $$$ ) {
             $d_cnt++;
           }
       }
+
       $prototype->{numregs} = $#{$$prototype{'regs'}} + 1;
       $prototype->{nb}      = $sfd->{base} eq '';
     }
@@ -823,6 +841,7 @@ sub parse_proto ( $$$ ) {
     }
 
     $$prototype{'nr'} = $$prototype{'return'} =~ /^(VOID|void)$/;
+
     # varargs sub types:
     #   printfcall: LONG Printf( STRPTR format, ... );
     #     All varargs are optional
@@ -841,6 +860,7 @@ sub parse_proto ( $$$ ) {
                 print STDERR "Warning: Adding missing Tag argument to " .
                   $prototype->{funcname} . "()\n";
             }
+
             my $last = pop @{$prototype->{args}};
             push @{$prototype->{args}}, "Tag _tag1" ;
             push @{$prototype->{args}}, $last;
@@ -909,15 +929,17 @@ sub parse_proto ( $$$ ) {
       my $___name = '';
       my $___arg  = '';
 
-      # MorhOS includes use __CLIB_PROTOTYPE for some reason ...
+      # MorphOS includes use __CLIB_PROTOTYPE for some reason ...
       if ($arg =~ /.*\(.*?\)\s*(__CLIB_PROTOTYPE)?\(.*\)/) {
           my $type1;
           my $type2;
-          ($type1, $name, $type2) =
-            ( $arg =~ /^\s*(.*)\(\s*\*+\s*(\w+)\s*\)\s*(\w*\(.*\))\s*/ );
-          $type = "$type1(*)$type2";
+          my $ptr;
+
+          ($type1, $ptr, $name, $type2) =
+            ( $arg =~ /^\s*(.*)\(\s*(\*+)\s*(\w+)\s*\)\s*(\w*\(.*\))\s*/ );
+          $type = "$type1($ptr)$type2";
           $___name = "___$name";
-          $___arg = "$type1(*___$name) $type2";
+          $___arg = "$type1($ptr"."___$name) $type2";
       }
       elsif ($arg !~ /^\.\.\.$/) {
           ($type, $name) = ( $arg =~ /^\s*(.*?[\s*]*?)\s*(\w+)\s*$/ );
@@ -985,6 +1007,7 @@ sub BEGIN {
           return 0;
       }
     }
+
 ### open_output: (Re)open the output file if necessary  #######################
 
     sub open_output ( $$ ) {
@@ -1012,6 +1035,7 @@ sub BEGIN {
                 print STDERR "Writing to '$new_output'\n";
             }
           }
+
           $old_output = $new_output;
 
           return 1;
