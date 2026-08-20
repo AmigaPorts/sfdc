@@ -766,6 +766,11 @@ sub parse_proto ( $$$ ) {
     $name = substr($name, rindex($name, " "));
     $name =~ s/^\s+|\s+$//g; # trim whitspaces
 
+    # A pointer return type may be glued to the name: "APTR *Foo(...)"
+    if ($name =~ s/^(\*+)//) {
+      $return .= " $1";
+    }
+
     # Nuke whitespaces from the register specification
     $registers =~ s/\s//;
 
