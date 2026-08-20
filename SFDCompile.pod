@@ -195,6 +195,14 @@ The base name of the library or device (C<dos>, for example).
 If omitted, the result will be sent to the standard output instead of
 a file.
 
+=item B<--protoname>
+
+The name of the proto header file that generated headers reference,
+without path or extension (for example C<cybergraphics> to make the
+inline header include F<proto/cybergraphics.h>). The caller decides
+what the proto file is actually called, so use this to make the
+reference match. If omitted, the base name is used.
+
 =item B<--quiet>
 
 Be quiet.

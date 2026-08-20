@@ -200,6 +200,7 @@ my $addvectors = 'none';
 my $man        = '0';
 my $mode       = 'verify';
 my $output     = '-';
+my $protoname  = '';
 my $quiet      = '0';
 my $target     = 'm68k-unknown-amigaos';
 my $version    = '0';
@@ -213,6 +214,7 @@ GetOptions ('addvectors=s' => \$addvectors,
           'man'          => \$man,
           'mode=s'       => \$mode,
           'output|o=s'   => \$output,
+          'protoname=s'  => \$protoname,
           'quiet|q'      => \$quiet,
           'target=s'     => \$target,
           'version|v'    => \$version) or exit 10;
@@ -707,6 +709,11 @@ sub parse_sfd ( $ ) {
     $$result{'Basename'} = lc $$result{'basename'};
     $$result{'Basename'} = ucfirst $$result{'Basename'};
     ($result->{BaseName} = $result->{base}) =~ s/Base//;
+
+    # The name of the proto header referenced from generated headers.
+    # The caller decides what the proto file is actually called, so let
+    # it override the guess with --protoname.
+    $$result{'protoname'} = $protoname ne '' ? $protoname : $$result{'basename'};
 
     return $result;
 }
@@ -1859,7 +1866,7 @@ BEGIN {
       print "#define _NO_INLINE\n";
       print "#define __NOLIBBASE__\n";
       print "#define __NOGLOBALIFACE__\n";
-      print "#include <proto/$sfd->{basename}.h>\n";
+      print "#include <proto/$sfd->{protoname}.h>\n";
       print "#undef _NO_INLINE\n";
       print "#undef __NOLIBBASE__\n";
       print "#undef __NOGLOBALIFACE__\n";
@@ -3399,7 +3406,7 @@ BEGIN {
       print "#define _INLINE_$$sfd{'BASENAME'}_H\n\n";
       
       print "#ifndef _PROTO_$$sfd{'BASENAME'}_H\n";
-      print "#include <proto/$$sfd{'basename'}.h>\n";
+      print "#include <proto/$$sfd{'protoname'}.h>\n";
       print "#endif\n\n";
       
       print <<'EOF';
@@ -6266,6 +6273,14 @@ The base name of the library or device (C<dos>, for example).
 
 If omitted, the result will be sent to the standard output instead of
 a file.
+
+=item B<--protoname>
+
+The name of the proto header file that generated headers reference,
+without path or extension (for example C<cybergraphics> to make the
+inline header include F<proto/cybergraphics.h>). The caller decides
+what the proto file is actually called, so use this to make the
+reference match. If omitted, the base name is used.
 
 =item B<--quiet>
 

@@ -23,7 +23,7 @@ BEGIN {
       print "#define _NO_INLINE\n";
       print "#define __NOLIBBASE__\n";
       print "#define __NOGLOBALIFACE__\n";
-      print "#include <proto/$sfd->{basename}.h>\n";
+      print "#include <proto/$sfd->{protoname}.h>\n";
       print "#undef _NO_INLINE\n";
       print "#undef __NOLIBBASE__\n";
       print "#undef __NOGLOBALIFACE__\n";
