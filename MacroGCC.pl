@@ -32,7 +32,7 @@ BEGIN {
       print "#define _INLINE_$$sfd{'BASENAME'}_H\n\n";
       
       print "#ifndef _PROTO_$$sfd{'BASENAME'}_H\n";
-      print "#include <proto/$$sfd{'basename'}.h>\n";
+      print "#include <proto/$$sfd{'protoname'}.h>\n";
       print "#endif\n\n";
       
       print <<'EOF';

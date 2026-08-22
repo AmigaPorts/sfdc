@@ -200,6 +200,7 @@ my $addvectors = 'none';
 my $man        = '0';
 my $mode       = 'verify';
 my $output     = '-';
+my $protoname  = '';
 my $quiet      = '0';
 my $target     = 'm68k-unknown-amigaos';
 my $version    = '0';
@@ -213,6 +214,7 @@ GetOptions ('addvectors=s' => \$addvectors,
           'man'          => \$man,
           'mode=s'       => \$mode,
           'output|o=s'   => \$output,
+          'protoname=s'  => \$protoname,
           'quiet|q'      => \$quiet,
           'target=s'     => \$target,
           'version|v'    => \$version) or exit 10;
@@ -707,6 +709,11 @@ sub parse_sfd ( $ ) {
     $$result{'Basename'} = lc $$result{'basename'};
     $$result{'Basename'} = ucfirst $$result{'Basename'};
     ($result->{BaseName} = $result->{base}) =~ s/Base//;
+
+    # The name of the proto header referenced from generated headers.
+    # The caller decides what the proto file is actually called, so let
+    # it override the guess with --protoname.
+    $$result{'protoname'} = $protoname ne '' ? $protoname : $$result{'basename'};
 
     return $result;
 }
