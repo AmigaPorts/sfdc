@@ -3573,45 +3573,17 @@ EOF
         # Get base macro name
         my $base_macro = $self->{BASE};
 
-		if ($fname eq 'MUI_NewObject') {
-		    print "AMIGA_VA_WRAPPER_ATTR\n";
-		    print "static __stdargs $ret __${fname}_va(";
-		    print join(", ", @param_decl);
-		    print ", ...)\n{\n";
-
-		    my $last_fixed = $names[$fixed_count-1];
-
-		    if ($pass_count == $fixed_count) {
-		        print "    const ULONG *tags = (const ULONG *)(&$last_fixed + 1);\n";
-		    } else {
-		        print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
-		    }
-
-		    my @call_args = @pass_names;
-		    push @call_args, "($cast)tags";
-
-		    if ($is_void) {
-		        print "    __${taglist_fname}_base($base_macro, " .
-		              join(", ", @call_args) . ");\n";
-		    } else {
-		        print "    return __${taglist_fname}_base($base_macro, " .
-		              join(", ", @call_args) . ");\n";
-		    }
-
-		    print "}\n\n";
-		    print "#define $fname __${fname}_va\n\n";
-		    return;
-		}
-
-        # Emit static helper definition - base is first parameter in a6
+        # The wrapper is an object-like macro naming a real function, so
+        # the base is fetched inside the helper. A function-like macro
+        # breaks callers that build the call from macros expanded inside
+        # another argument list, where the preprocessor cannot balance the
+        # parentheses (MUI's WindowObject, ..., End and ReAction's
+        # LAYOUT_AddChild, SpaceObject, End).
         print "AMIGA_VA_WRAPPER_ATTR\n";
-        print "static __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
-        if (@param_decl) {
-            print ", ";
-        }
+        print "static __stdargs $ret __${fname}_va(";
         print join(", ", @param_decl);
         print ", ...)\n{\n";
-        
+
         my $last_fixed = $names[$fixed_count-1];
         if ($pass_count == $fixed_count) {
             # All fixed parameters are real parameters of the base function,
@@ -3622,20 +3594,18 @@ EOF
             # The last fixed parameter is the first array element.
             print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
         }
-        
-        # Build the call to the base function
+
         my @call_args = @pass_names;
         push @call_args, "($cast)tags";
-        
+
         if ($is_void) {
-            print "    __${taglist_fname}_base(__base, " . join(", ", @call_args) . ");\n";
+            print "    __${taglist_fname}_base($base_macro, " . join(", ", @call_args) . ");\n";
         } else {
-            print "    return __${taglist_fname}_base(__base, " . join(", ", @call_args) . ");\n";
+            print "    return __${taglist_fname}_base($base_macro, " . join(", ", @call_args) . ");\n";
         }
         print "}\n\n";
-        
-        # Emit macro wrapper - passes base as argument
-        print "#define $fname(...) __${fname}_va($base_macro, __VA_ARGS__)\n\n";
+
+        print "#define $fname __${fname}_va\n\n";
     }
 
     # Generate Format String varargs helper
