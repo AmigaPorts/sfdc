@@ -22,6 +22,22 @@ BEGIN {
         return "$type $name";
     }
 
+    # Map integer types narrower than a register to the LONG or ULONG
+    # that fills it; anything else (pointers, LONG, structs, function
+    # pointers) is returned unchanged.
+    sub widen_register_type {
+        my ($type) = @_;
+        my $t = $type;
+        $t =~ s/^\s+|\s+$//g;
+        $t =~ s/\s+/ /g;
+
+        return 'LONG'
+          if $t =~ /^(WORD|BYTE|BOOL|short|signed short|short int|signed char|int8_t|int16_t)$/;
+        return 'ULONG'
+          if $t =~ /^(UWORD|UBYTE|TEXT|unsigned short|unsigned short int|unsigned char|uint8_t|uint16_t)$/;
+        return $type;
+    }
+
     sub header {
       my $self = shift;
       my $sfd  = $self->{SFD};
@@ -583,8 +599,15 @@ EOF
           $clean_type =~ s/^\s*(const|CONST)\s+//;
           $clean_type =~ s/^CONST_//;
 
-          my $decl = rewrite_type_for_declaration($clean_type, "__v$i");
-          
+          # Library functions read the whole register, while the SFD
+          # types say what the argument may hold; a WORD bound to d0
+          # would load only the low word and leave stale bits above it.
+          # Bind narrow integers to a LONG or ULONG register so the
+          # assignment extends them, as the amiga.lib stubs and the LONG
+          # clib prototypes always did.
+          my $reg_type = widen_register_type($clean_type);
+          my $decl = rewrite_type_for_declaration($reg_type, "__v$i");
+
           print "  register $decl __asm(\"$bind_reg\") = __p_$names[$i];\\\n";
           
           $used_regs{$bind_reg} = 1;
