@@ -3573,39 +3573,56 @@ EOF
         # Get base macro name
         my $base_macro = $self->{BASE};
 
-        # The wrapper is an object-like macro naming a real function, so
-        # the base is fetched inside the helper. A function-like macro
-        # breaks callers that build the call from macros expanded inside
-        # another argument list, where the preprocessor cannot balance the
-        # parentheses (MUI's WindowObject, ..., End and ReAction's
-        # LAYOUT_AddChild, SpaceObject, End).
-        print "AMIGA_VA_WRAPPER_ATTR\n";
-        print "static __stdargs $ret __${fname}_va(";
-        print join(", ", @param_decl);
-        print ", ...)\n{\n";
+        # Object-like wrappers must fetch the base inside the helper to
+        # preserve calls assembled from other macros. Under __NOLIBBASE__,
+        # however, the global base has no declaration. Keep the base in the
+        # function-like macro there, so merely including the header remains
+        # valid and callers can provide a local base.
+        my $emit_helper = sub {
+            my ($explicit_base) = @_;
 
-        my $last_fixed = $names[$fixed_count-1];
-        if ($pass_count == $fixed_count) {
-            # All fixed parameters are real parameters of the base function,
-            # so the array starts at the first variadic slot, one past the
-            # last named one (e.g. EasyRequest's format arguments).
-            print "    const ULONG *tags = (const ULONG *)(&$last_fixed + 1);\n";
-        } else {
-            # The last fixed parameter is the first array element.
-            print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
-        }
+            print "AMIGA_VA_WRAPPER_ATTR\n";
+            print "static __stdargs $ret __${fname}_va(";
+            if ($explicit_base) {
+                print "void *const __base __asm(\"a6\"), ";
+            }
+            print join(", ", @param_decl);
+            print ", ...)\n{\n";
 
-        my @call_args = @pass_names;
-        push @call_args, "($cast)tags";
+            my $last_fixed = $names[$fixed_count-1];
+            if ($pass_count == $fixed_count) {
+                # All fixed parameters are real parameters of the base
+                # function, so the array starts at the first variadic slot,
+                # one past the last named one (e.g. EasyRequest's format
+                # arguments).
+                print "    const ULONG *tags = (const ULONG *)(&$last_fixed + 1);\n";
+            } else {
+                # The last fixed parameter is the first array element.
+                print "    const ULONG *tags = (const ULONG *)&$last_fixed;\n";
+            }
 
-        if ($is_void) {
-            print "    __${taglist_fname}_base($base_macro, " . join(", ", @call_args) . ");\n";
-        } else {
-            print "    return __${taglist_fname}_base($base_macro, " . join(", ", @call_args) . ");\n";
-        }
-        print "}\n\n";
+            my @call_args = @pass_names;
+            push @call_args, "($cast)tags";
+            my $base = $explicit_base ? '__base' : $base_macro;
 
-        print "#define $fname __${fname}_va\n\n";
+            if ($is_void) {
+                print "    __${taglist_fname}_base($base, " .
+                      join(", ", @call_args) . ");\n";
+            } else {
+                print "    return __${taglist_fname}_base($base, " .
+                      join(", ", @call_args) . ");\n";
+            }
+            print "}\n\n";
+        };
+
+        print "#ifdef __NOLIBBASE__\n";
+        $emit_helper->(1);
+        print "#define $fname(...) " .
+              "__${fname}_va($base_macro, __VA_ARGS__)\n";
+        print "#else\n";
+        $emit_helper->(0);
+        print "#define $fname __${fname}_va\n";
+        print "#endif /* __NOLIBBASE__ */\n\n";
     }
 
     # Generate Format String varargs helper
