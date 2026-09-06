@@ -516,7 +516,6 @@ EOF
 	  }
       print join(", ", @names);
       print ") ({\\\n";
-      print "  register void * __p__in_base __asm(\"a6\") = (void *)(__in_base);\\\n";
       # Evaluate all parameters into local variables FIRST
       # This prevents function call parameters from being clobbered
       # by register assignments for inline assembly.
@@ -532,6 +531,10 @@ EOF
               print "  $clean_type __p_$names[$i] = ($clean_type)($names[$i]);\\\n";
           }
       }
+
+      # Bind the base register only now: an argument expression may itself
+      # be an inline call that binds a6 to its own library base.
+      print "  register void * __p__in_base __asm(\"a6\") = (void *)(__in_base);\\\n";
 
       # Return register (always create for non-void)
       if (!$is_void) {
