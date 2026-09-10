@@ -1,0 +1,16 @@
+==id $VER: test_lib.sfd 1.0 (10.09.2026)
+* Small SFD for the sfdc smoke test: plain calls, an alias and a
+* varargs pair.
+==base _TestBase
+==basetype struct Library *
+==libname test.library
+==bias 30
+==public
+LONG TestAdd(LONG a, LONG b) (d0,d1)
+struct Node *TestFind(struct List *list, CONST_STRPTR name) (a0,a1)
+==alias
+struct Node *TestLookup(struct List *list, CONST_STRPTR name) (a0,a1)
+==varargs
+LONG TestPrintfA(CONST_STRPTR format, APTR args) (a0,a1)
+LONG TestPrintf(CONST_STRPTR format, ...) (a0,a1)
+==end

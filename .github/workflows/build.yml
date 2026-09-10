@@ -1,0 +1,31 @@
+# Build the sfdc script from its Perl modules, smoke-test the header
+# generation and publish the result as an artifact. The full toolchain
+# build with this sfdc is triggered by toolchain-ci.yml through the ci-*
+# labels.
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configure and build
+        run: ./configure && make
+
+      - name: Smoke test
+        run: make -C test check
+
+      - name: Upload sfdc
+        uses: actions/upload-artifact@v7
+        with:
+          name: sfdc
+          path: |
+            sfdc
+            sfdc.1
+            sfdc.txt
+            sfdc.readme
