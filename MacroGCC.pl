@@ -710,21 +710,23 @@ EOF
       print "  __asm volatile (\\\n";
 
       if ($uses_a5) {
-          print "                   \"exg %%d7,%%a5\\n\"\\\n";
+          print "                   \"exg %/d7,%/a5\\n\"\\\n";
       }
 
       if ($uses_a4 && $forced_a4 == 2) {
-          print "                   \"exg %%d6,%%a4\\n\"\\\n";
+          print "                   \"exg %/d6,%/a4\\n\"\\\n";
       }
 
-      print "                   \"jsr %%a6@(-$bias:W)\\n\"\\\n";
+      # %/ is gcc's register prefix (empty here, '%' on ELF targets), so
+      # the asm stays valid for whichever assembler syntax gcc emits
+      print "                   \"jsr %/a6@(-$bias:W)\\n\"\\\n";
 
       if ($uses_a4 && $forced_a4 == 2) {
-          print "                   \"exg %%d6,%%a4\\n\"\\\n";
+          print "                   \"exg %/d6,%/a4\\n\"\\\n";
       }
 
       if ($uses_a5) {
-          print "                   \"exg %%d7,%%a5\\n\"\\\n";
+          print "                   \"exg %/d7,%/a5\\n\"\\\n";
       }
 
       # outputs
