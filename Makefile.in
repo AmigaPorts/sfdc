@@ -36,12 +36,10 @@ install:	all
 	$(INSTALL_PROGRAM) $(EXECUTABLE) $(DESTDIR)$(bindir)
 	$(INSTALL_DATA) $(MAN) $(DESTDIR)$(mandir)/man1
 
-tgz:		all gg-sfdc.spec
-	[ -z "`svk diff`" ] || (echo "Not checked in!"; exit 10)
-	svk co --export //local/arp2/gg/sfdc/trunk /tmp/$(EXECUTABLE)-$(VERSION)
-	(cd /tmp && tar cfvz $(EXECUTABLE)-$(VERSION).tar.gz $(EXECUTABLE)-$(VERSION))
-	cp /tmp/$(EXECUTABLE)-$(VERSION).tar.gz .
-	$(RM) -r /tmp/$(EXECUTABLE)-$(VERSION) /tmp/$(EXECUTABLE)-$(VERSION).tar.gz
+# source tarball of the checked-in tree
+tgz:
+	git archive --format=tar.gz --prefix=$(EXECUTABLE)-$(VERSION)/ \
+		-o $(EXECUTABLE)-$(VERSION).tar.gz HEAD
 
 lha:		all tgz
 	$(RM) $(EXECUTABLE).lha

@@ -1,9 +1,9 @@
-Short:        Compile SFD files into someting useful (v1.12)
+Short:        Compile SFD files into someting useful (v1.13)
 Author:       Martin Blom <martin@blom.org>
 Uploader:     Martin Blom <martin@blom.org>
 Type:         dev/gcc
 Requires:     perl
-Version:      1.12
+Version:      1.13
 Architecture: all
 
 sfdc is an open source replacement for Amiga, Inc.'s sfd tool,

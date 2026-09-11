@@ -1,0 +1,52 @@
+# Pushing a v* tag builds sfdc, runs the smoke test and publishes a
+# GitHub release with the script and its documentation. The tag must
+# match the version in configure.ac.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configure and build
+        run: ./configure && make
+
+      - name: Smoke test
+        run: make -C test check
+
+      - name: Check the tag against the configured version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(./sfdc --version 2>&1 | sed -n '1s/^sfdc \([^ ]*\).*/\1/p')
+          if [ "$version" != "${TAG#v}" ]; then
+            echo "tag $TAG does not match sfdc version $version (configure.ac)"
+            exit 1
+          fi
+
+      - name: Package
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # source tarball plus the built script with its documentation
+          make tgz
+          mkdir "sfdc-${TAG#v}-bin"
+          cp sfdc sfdc.1 sfdc.txt sfdc.readme COPYING "sfdc-${TAG#v}-bin"
+          tar czf "sfdc-${TAG#v}-bin.tar.gz" "sfdc-${TAG#v}-bin"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" "sfdc-${TAG#v}.tar.gz" \
+            "sfdc-${TAG#v}-bin.tar.gz" sfdc \
+            --title "sfdc ${TAG#v}" --generate-notes
