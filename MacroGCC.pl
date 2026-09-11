@@ -465,8 +465,18 @@ EOF
       my $is_void   = ($ret =~ /^(VOID|void)$/);
       my $fname     = $$p{'funcname'};
 
+      # A function taking a parameter in a6 gets its base from the caller
+      # (cia.resource: ciaa and ciab share one SFD without ==base, and
+      # the resource pointer is the first argument). No implicit base then.
+      my $explicit_base = grep { defined $_ && $_ eq 'a6' } @regs;
+
       # Check if this is a varargs function
       if ($self->is_varargs_function($p)) {
+          # The varargs helpers take the implicit base in a6 themselves;
+          # no SFD combines that with an a6 parameter, so refuse rather
+          # than emit a wrapper that passes an undefined base.
+          die "$fname: varargs with the base passed in a6 is not supported\n"
+              if $explicit_base;
           my $pattern = $self->detect_varargs_pattern($p);
           
           if ($pattern eq 'taglist') {
@@ -510,9 +520,10 @@ EOF
       my $base_macro = $self->{BASE};
 
       # Generate the base inline assembly macro (__${fname}_base)
-      print "#define __${fname}_base(__in_base";
+      print "#define __${fname}_base(";
+      print "__in_base" unless $explicit_base;
       if (@names) {
-		print ", ";
+		print ", " unless $explicit_base;
 	  }
       print join(", ", @names);
       print ") ({\\\n";
@@ -534,7 +545,8 @@ EOF
 
       # Bind the base register only now: an argument expression may itself
       # be an inline call that binds a6 to its own library base.
-      print "  register void * __p__in_base __asm(\"a6\") = (void *)(__in_base);\\\n";
+      print "  register void * __p__in_base __asm(\"a6\") = (void *)(__in_base);\\\n"
+          unless $explicit_base;
 
       # Return register (always create for non-void)
       if (!$is_void) {
@@ -645,7 +657,7 @@ EOF
       # __v_base's liveness alone does not reach it, and without the
       # operand gcc is free to reuse a6 as scratch between the outer
       # macro and the call.
-      push @inputs, "\"a\"(__p__in_base)";
+      push @inputs, "\"a\"(__p__in_base)" unless $explicit_base;
 
       # Return register
       if (!$is_void) {
@@ -698,21 +710,23 @@ EOF
       print "  __asm volatile (\\\n";
 
       if ($uses_a5) {
-          print "                   \"exg %%d7,%%a5\\n\"\\\n";
+          print "                   \"exg %/d7,%/a5\\n\"\\\n";
       }
 
       if ($uses_a4 && $forced_a4 == 2) {
-          print "                   \"exg %%d6,%%a4\\n\"\\\n";
+          print "                   \"exg %/d6,%/a4\\n\"\\\n";
       }
 
-      print "                   \"jsr %%a6@(-$bias:W)\\n\"\\\n";
+      # %/ is gcc's register prefix (empty here, '%' on ELF targets), so
+      # the asm stays valid for whichever assembler syntax gcc emits
+      print "                   \"jsr %/a6@(-$bias:W)\\n\"\\\n";
 
       if ($uses_a4 && $forced_a4 == 2) {
-          print "                   \"exg %%d6,%%a4\\n\"\\\n";
+          print "                   \"exg %/d6,%/a4\\n\"\\\n";
       }
 
       if ($uses_a5) {
-          print "                   \"exg %%d7,%%a5\\n\"\\\n";
+          print "                   \"exg %/d7,%/a5\\n\"\\\n";
       }
 
       # outputs
@@ -740,13 +754,15 @@ EOF
           print "  __v_ret;})\n\n";
       }
 
-      # Generate the public macro that sets up a6
+      # Generate the public macro that sets up a6 (the caller does that
+      # itself through the a6 parameter of an explicit-base function)
       print "#define $fname(";
       print join(", ", @names);
       print ") ({\\\n";
-      print "  __${fname}_base(($base_macro)";
+      print "  __${fname}_base(";
+      print "($base_macro)" unless $explicit_base;
       if (@names) {
-        print ", ";
+        print ", " unless $explicit_base;
       }
       print join(", ", @names);
       print ");\\\n";
