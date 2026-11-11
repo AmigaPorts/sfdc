@@ -15,6 +15,7 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 	grep -q '^#define TestPrintf(' $(OUT)/inline.h
 	grep -q '^#define TestAdd(a, b) __TestAdd(TestBase, (a), (b))' $(OUT)/inline_vbcc.h
 	grep -q 'TestBase' $(OUT)/proto.h
+	grep -q '^#  include <inline/test_protos.h>' $(OUT)/proto.h
 	grep -q '_LVOTestAdd' $(OUT)/lvo.i
 	grep -q 'LONG TestAdd(' $(OUT)/clib.h
 	@echo "sfdc smoke test passed"
