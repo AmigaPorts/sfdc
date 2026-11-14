@@ -1,5 +1,7 @@
 BEGIN {
     package MacroGCC;
+    use strict;
+    use warnings;
     use vars qw(@ISA);
     @ISA = qw( Macro );   # reuse ctor/header/footer from Macro
 

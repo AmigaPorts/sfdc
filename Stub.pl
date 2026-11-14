@@ -3,6 +3,8 @@
 
 BEGIN {
     package Stub;
+    use strict;
+    use warnings;
 
     sub new {
       my $proto  = shift;

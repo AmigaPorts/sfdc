@@ -8,6 +8,8 @@
 
 BEGIN {
     package Stub68k;
+    use strict;
+    use warnings;
     use vars qw(@ISA);
     @ISA = qw( Stub );
 

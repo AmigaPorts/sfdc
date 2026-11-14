@@ -7,6 +7,8 @@
 
 BEGIN {
     package LVOLib;
+    use strict;
+    use warnings;
 
     sub new {
       my $proto  = shift;
