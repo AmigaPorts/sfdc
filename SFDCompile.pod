@@ -84,7 +84,8 @@ following arguments:
 Generate C code for automatically opening the module. It is usually
 placed in a link library together with C stub functions. For libnix,
 the code is an entry in the list of libraries its startup code opens:
-there is none for F<exec.library> and for devices, and a BOOPSI gadget,
+there is none for F<exec.library>, for devices and for an SFD file
+without C<==libname>, and a BOOPSI gadget,
 image or datatype class is opened with its directory
 (F<gadgets/button.gadget>).
 

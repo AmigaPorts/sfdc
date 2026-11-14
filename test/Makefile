@@ -25,7 +25,8 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 	@echo "sfdc smoke test passed"
 
 # One run for all the SFD files, which must not warn.  A gadget, image or
-# datatype class gets its directory; exec.library and a device get no entry.
+# datatype class gets its directory; exec.library, a device and an SFD file
+# without ==libname get no entry.
 check-autoopen: $(OUT)/autoopen/.done
 	test ! -s $(OUT)/autoopen/.done
 	grep -q $(call base,TestBase,test.library) $(OUT)/autoopen/test.c
@@ -35,6 +36,7 @@ check-autoopen: $(OUT)/autoopen/.done
 	grep -q $(call base,PictureBase,datatypes/picture.datatype) $(OUT)/autoopen/picture.c
 	! grep -q LIB_LIST $(OUT)/autoopen/timer.c
 	! grep -q LIB_LIST $(OUT)/autoopen/exec.c
+	! grep -q LIB_LIST $(OUT)/autoopen/engine.c
 
 $(OUT):
 	mkdir -p $(OUT)

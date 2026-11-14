@@ -1,0 +1,8 @@
+==id $VER: engine_lib.sfd 1.0 (14.11.2026)
+* No ==libname: functions that several classes have, as in dtclass_lib.sfd
+==base _EngineBase
+==basetype struct Library *
+==bias 30
+==public
+APTR ObtainEngine() ()
+==end
