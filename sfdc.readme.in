@@ -1,6 +1,6 @@
 Short:        Compile SFD files into someting useful (v@PACKAGE_VERSION@)
 Author:       Martin Blom <martin@blom.org>
-Uploader:     Martin Blom <martin@blom.org>
+Uploader:     Bernie Innocenti <bernie@codewiz.org>
 Type:         dev/gcc
 Requires:     perl
 Version:      @PACKAGE_VERSION@
