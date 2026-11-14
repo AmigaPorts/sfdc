@@ -1,0 +1,8 @@
+==id $VER: bevel_lib.sfd 1.0 (14.11.2026)
+==base _BevelBase
+==basetype struct Library *
+==libname bevel.image
+==bias 30
+==public
+ULONG BevelVersion(VOID) ()
+==end

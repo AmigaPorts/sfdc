@@ -1,0 +1,8 @@
+==id $VER: button_lib.sfd 1.0 (14.11.2026)
+==base _ButtonBase
+==basetype struct Library *
+==libname button.gadget
+==bias 30
+==public
+ULONG ButtonVersion(VOID) ()
+==end

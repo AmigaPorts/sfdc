@@ -1,0 +1,8 @@
+==id $VER: exec_lib.sfd 1.0 (14.11.2026)
+==base _SysBase
+==basetype struct ExecBase *
+==libname exec.library
+==bias 30
+==public
+ULONG ExecVersion(VOID) ()
+==end
