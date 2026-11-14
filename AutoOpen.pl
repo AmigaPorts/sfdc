@@ -3,6 +3,8 @@
 
 BEGIN {
     package AutoOpen;
+    use strict;
+    use warnings;
 
     sub new {
       my $proto    = shift;
