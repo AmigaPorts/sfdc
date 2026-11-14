@@ -754,6 +754,9 @@ EOF
           print "  __v_ret;})\n\n";
       }
 
+      # A stub calls the base macro itself
+      return if $params{'base_only'};
+
       # Generate the public macro that sets up a6 (the caller does that
       # itself through the a6 parameter of an explicit-base function)
       print "#define $fname(";

@@ -389,6 +389,12 @@ for my $i ( 0 .. $#ARGV ) {
     for my $j ( 0 .. $num + 1) {
       my $prototype = $$sfd{'prototypes'}[$j];
       my $funcname  = $$prototype{'funcname'};
+
+      # A private function gets no stub, and no file of its own for none
+      if ($mode eq 'stubs' && $output =~ /%f/ && $$prototype{'private'}) {
+          next;
+      }
+
       if (!defined ($funcname) || will_close_output ($sfd, $funcname) != 0) {
           $obj->footer ();
       }

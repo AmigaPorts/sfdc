@@ -160,7 +160,9 @@ Generate C library stubs suitable to be compiled and archived into
 F<libamiga.a>, F<libamigastubs.a> or
 F<libI<E<lt>moduleE<gt>>.a>. Using the B<%f> escape sequence in the
 B<--output> switch or a tool like F<splitasm.awk> strongly is
-recommended.
+recommended. With B<%f>, a private function gets no file. A m68k stub
+makes its library call through the macro that the B<macros> mode of
+the C<m68k-gcc-amigaos> target writes, which it carries along.
 
 =item B<verify>
 

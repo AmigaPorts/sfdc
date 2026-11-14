@@ -1,6 +1,11 @@
 
 ### Class Stub68k: Create a 68k stub file #####################################
 
+# A stub is a C function that takes its arguments from the stack and makes
+# the library call through MacroGCC's inline macro, so that one place knows
+# which registers a call binds and clobbers. A varargs stub makes the call of
+# the function it belongs to, with the address of its variable arguments.
+
 BEGIN {
     package Stub68k;
     use vars qw(@ISA);
@@ -10,35 +15,76 @@ BEGIN {
       my $proto  = shift;
       my $class  = ref($proto) || $proto;
       my $self   = $class->SUPER::new( @_ );
+      $self->{MACRO} = MacroGCC->new( @_ );
       bless ($self, $class);
       return $self;
+    }
+
+    # The function whose library vector the stub calls
+
+    sub called {
+      my $self      = shift;
+      my $prototype = shift;
+
+      return $prototype->{type} eq 'varargs' ?
+          $prototype->{real_prototype} : $prototype;
+    }
+
+    # A function that takes its base as an argument, in a6 (cia.resource),
+    # has a macro without a base parameter
+
+    sub has_base {
+      my $self      = shift;
+      my $prototype = shift;
+
+      return !grep { $_ eq 'a6' } @{$self->called ($prototype)->{regs}};
+    }
+
+    sub function_proto {
+      my $self         = shift;
+      my %params       = @_;
+      my $prototype    = $params{'prototype'};
+      my $decl_regular = $params{'decl_regular'};
+
+      if ($prototype->{type} eq 'function' &&
+          $prototype->{numargs} > 0 &&
+          $prototype->{argnames}[-1] eq '...') {
+          print STDERR "$prototype->{funcname}: " .
+            "a variable argument list needs ==varargs.\n";
+          die;
+      }
+
+      if ($prototype->{type} eq 'function' ||
+          ($prototype->{type} eq 'varargs' && $decl_regular)) {
+          $self->{MACRO}->function (prototype => $self->called ($prototype),
+                                    base_only => 1);
+      }
+
+      $self->SUPER::function_proto (prototype    => $prototype,
+                                    decl_regular => 0);
     }
 
     sub function_start {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
-      my $sfd       = $self->{SFD};
 
-      if ($prototype->{type} eq 'function') {
+      if ($prototype->{type} eq 'function' ||
+          $prototype->{type} eq 'varargs') {
+          my $called = $self->called ($prototype);
+
           print "\n";
           print "{\n";
 
-          if (!$prototype->{nb}) {
+          if ($self->has_base ($prototype)) {
             print "  BASE_EXT_DECL\n";
           }
-          if (!$prototype->{nr}) {
-            my $rettype_prefix = $prototype->{return};
-            my $rettype_postfix = "";
-            if ($prototype->{return} =~ /(.*\(\*+)(\).*)/) {
-              $rettype_prefix = $1;
-              $rettype_postfix = $2;
-            }
-            print "  register $rettype_prefix _res $rettype_postfix __asm(\"d0\");\n";
-          }
-          if (!$prototype->{nb}) {
-            print "  register $sfd->{basetype} _base __asm(\"a6\") " .
-                "= BASE_NAME;\n";
+
+          print "  " . ($called->{nr} ? "" : "return ") .
+            "__$called->{funcname}_base(";
+
+          if ($self->has_base ($prototype)) {
+            print "BASE_NAME";
           }
       }
       else {
@@ -50,92 +96,23 @@ BEGIN {
       my $self      = shift;
       my %params    = @_;
       my $prototype = $params{'prototype'};
-      my $argtype   = $params{'argtype'};
       my $argname   = $params{'argname'};
-      my $argreg    = $params{'argreg'};
       my $argnum    = $params{'argnum'};
-      my $sfd       = $self->{SFD};
 
-      if ($$prototype{'type'} eq 'function') {
-          if ($argreg eq 'a4' || $argreg eq 'a5') {
-            $argreg = 'd7';
+      if ($prototype->{type} eq 'function' ||
+          $prototype->{type} eq 'varargs') {
+          my $argstr = $prototype->{type} eq 'varargs' ?
+            $self->varargs_arg (@_) : $argname;
+
+          if ($argstr ne '') {
+            if ($argnum != 0 || $self->has_base ($prototype)) {
+                print ", ";
+            }
+            print $argstr;
           }
-          print "  register $prototype->{args}[$argnum] __asm(\"$argreg\") " .
-            "= $argname;\n";
       }
       else {
           $self->SUPER::function_arg (@_);
-      }
-    }
-    sub function_end {
-      my $self      = shift;
-      my %params    = @_;
-      my $prototype = $params{'prototype'};
-      my $sfd       = $self->{SFD};
-      if ($$prototype{'type'} eq 'function') {
-          my $regs      = join(',', @{$$prototype{'regs'}});
-          my $a4        = $regs =~ /a4/;
-          my $a5        = $regs =~ /a5/;
-          my %rmap = ();
-          
-          for my $i (0 .. $$prototype{'numargs'} - 1 ) {
-            $rmap{$$prototype{'regs'}[$i]} = 1;
-          }
-          
-          if ($a4 && $a5 && !$quiet) {
-            print STDERR "$$prototype{'funcname'} uses both a4 and a5 " .
-                "for arguments. This is not going to work.\n";
-          }
-
-          if ($a4) {
-            print "  __asm volatile (\"exg d7,a4\\n\\tjsr a6@(-" .
-                "$prototype->{bias}:W)\\n\\texg d7,a4\"\n";
-          }
-          elsif ($a5) {
-            print "  __asm volatile (\"exg d7,a5\\n\\tjsr a6@(-" .
-                "$prototype->{bias}:W)\\n\\texg d7,a5\"\n";
-          }
-          else {
-            print "  __asm volatile (\"jsr a6@(-$prototype->{bias}:W)\"\n";
-          }
-          print "  : " .
-            ($prototype->{nr} ? "/* No output */" : '"=r" (_res)') . "\n";
-          print "  : ";
-          if (!$prototype->{nb}) {
-            print '"r" (_base)';
-          }
-
-          for my $i (0 .. $prototype->{numargs} - 1) {
-            if ($i != 0 || !$prototype->{nb}) {
-                print ", ";
-            }
-            print '"r" (' . $prototype->{argnames}[$i] . ')';
-          }
-
-          print "\n";
-          print '  :';
-          if (not exists $rmap{'d0'} or !$prototype->{nr}) {
-          	print ' "d0",';
-          }
-          if (not exists $rmap{'d1'}) {
-          	print ' "d1",';
-          }
-          if (not exists $rmap{'a0'}) {
-          	print ' "a0",';
-          }
-          if (not exists $rmap{'a1'}) {
-          	print ' "a1",';
-          }
-          print ' "fp0", "fp1", "cc", "memory");';
-          print "\n";
-          if (!$prototype->{nr}) {
-            print "  return _res;\n";
-          }
-
-          print "}\n";
-      }
-      else {
-          $self->SUPER::function_end (@_);
       }
     }
 }
