@@ -1,0 +1,8 @@
+==id $VER: picture_lib.sfd 1.0 (14.11.2026)
+==base _PictureBase
+==basetype struct Library *
+==libname picture.datatype
+==bias 30
+==public
+ULONG PictureVersion(VOID) ()
+==end

@@ -1,0 +1,8 @@
+==id $VER: timer_lib.sfd 1.0 (14.11.2026)
+==base _TimerBase
+==basetype struct Device *
+==libname timer.device
+==bias 30
+==public
+ULONG TimerVersion(VOID) ()
+==end

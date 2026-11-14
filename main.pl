@@ -20,6 +20,7 @@
 #     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 use strict;
+use warnings;
 
 use IO::Handle;
 use Getopt::Long;
@@ -684,6 +685,8 @@ sub parse_sfd ( $ ) {
     ( $$result{'basename'} = $$result{'libname'} ) =~ s/(.*)\.\w+/$1/;
 
     if ($$result{'basename'} eq '') {
+      # A name made up from the file name, which nothing may open by
+      $$result{'libname_guessed'} = 1;
       ( $$result{'basename'} = $file ) =~ s:.*/(\w+?)_lib\.sfd:$1: or do {
           print STDERR "Unable to find or guess base name.\n";
           print STDERR "Please add \"==libname module_name\" to SFD file.\n";
@@ -994,7 +997,10 @@ sub BEGIN {
 ### close_output: Close the output file if necessary  #########################
 
     sub close_output () {
+      # Reopen the saved STDOUT at once: otherwise the next file opened,
+      # such as the next SFD file, gets its descriptor
       close (STDOUT);
+      open (STDOUT, ">&OLDOUT");
       $old_output = '';
     }
 

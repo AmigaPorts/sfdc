@@ -9,7 +9,11 @@ OUT = out
 
 all: check
 
-check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/clib.h
+# The library bases for libnix's startup code to open, one per kind of name
+AUTOOPEN_SFD = $(SFD) $(wildcard autoopen/*_lib.sfd)
+base = '^void\* $(1)\[2\] = { (void\*)-1, "$(2)" };'
+
+check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/clib.h check-autoopen
 	grep -q '^#define TestAdd(___a, ___b)' $(OUT)/inline.h
 	grep -q '^#define TestLookup(___list, ___name)' $(OUT)/inline.h
 	grep -q '^#define TestPrintf(' $(OUT)/inline.h
@@ -20,8 +24,27 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 	grep -q 'LONG TestAdd(' $(OUT)/clib.h
 	@echo "sfdc smoke test passed"
 
+# One run for all the SFD files, which must not warn.  A gadget, image or
+# datatype class gets its directory; exec.library, a device and an SFD file
+# without ==libname get no entry.
+check-autoopen: $(OUT)/autoopen/.done
+	test ! -s $(OUT)/autoopen/.done
+	grep -q $(call base,TestBase,test.library) $(OUT)/autoopen/test.c
+	grep -q $(call base,MiscBase,misc.resource) $(OUT)/autoopen/misc.c
+	grep -q $(call base,ButtonBase,gadgets/button.gadget) $(OUT)/autoopen/button.c
+	grep -q $(call base,BevelBase,images/bevel.image) $(OUT)/autoopen/bevel.c
+	grep -q $(call base,PictureBase,datatypes/picture.datatype) $(OUT)/autoopen/picture.c
+	! grep -q LIB_LIST $(OUT)/autoopen/timer.c
+	! grep -q LIB_LIST $(OUT)/autoopen/exec.c
+	! grep -q LIB_LIST $(OUT)/autoopen/engine.c
+
 $(OUT):
 	mkdir -p $(OUT)
+
+$(OUT)/autoopen/.done: $(AUTOOPEN_SFD) $(SFDC) | $(OUT)
+	rm -rf $(OUT)/autoopen && mkdir -p $(OUT)/autoopen
+	$(SFDC) --quiet --target=m68k-amigaos --mode=autoopen --output=$(OUT)/autoopen/%n.c $(AUTOOPEN_SFD) 2>$@.err
+	mv $@.err $@
 
 $(OUT)/inline.h: $(SFD) $(SFDC) | $(OUT)
 	$(SFDC) --target=m68k-gcc-amigaos --mode=macros --output=$@ $<
@@ -41,4 +64,4 @@ $(OUT)/clib.h: $(SFD) $(SFDC) | $(OUT)
 clean:
 	rm -rf $(OUT)
 
-.PHONY: all check clean
+.PHONY: all check check-autoopen clean

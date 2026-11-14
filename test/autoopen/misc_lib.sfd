@@ -1,0 +1,8 @@
+==id $VER: misc_lib.sfd 1.0 (14.11.2026)
+==base _MiscBase
+==basetype struct Library *
+==libname misc.resource
+==bias 30
+==public
+ULONG MiscVersion(VOID) ()
+==end

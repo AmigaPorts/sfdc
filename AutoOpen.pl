@@ -3,6 +3,8 @@
 
 BEGIN {
     package AutoOpen;
+    use strict;
+    use warnings;
 
     sub new {
       my $proto    = shift;
@@ -27,9 +29,23 @@ BEGIN {
           print "\n";
           print "#if defined (__libnix__)\n";
           print "\n";
-          print "__attribute__((section(\".dlist___LIB_LIST__\")))\n";
-          print "void* $sfd->{base}" . "[2] = { (void*)-1, \"$sfd->{libname}\" };\n";
-          print "\n";
+
+          # The startup code opens the entries of this list. It has
+          # exec.library already, and a device comes from OpenDevice():
+          # no entry for these. Nor for an SFD file without ==libname, such
+          # as one for the functions every datatype class has, where sfdc
+          # made the name up. BOOPSI gadget, image and datatype classes are
+          # opened with the directory they are installed in.
+          my $name = $sfd->{libname};
+          $name = "$1s/$name" if $name =~ /^[^\/]*\.(gadget|image|datatype)$/;
+
+          if ($name ne 'exec.library' && $name !~ /\.device$/ &&
+              !$sfd->{libname_guessed}) {
+            print "__attribute__((section(\".dlist___LIB_LIST__\")))\n";
+            print "void* $sfd->{base}" . "[2] = { (void*)-1, \"$name\" };\n";
+            print "\n";
+          }
+
           print "#elif defined (__AMIGAOS4__)\n";
           print "\n";
           print "#undef __USE_INLINE__\n";
@@ -71,11 +87,11 @@ BEGIN {
           print "\n";
           print "\n";
           print "#endif\n";
+          print "\n";
+          print "#ifdef __cplusplus\n";
+          print "}\n";
+          print "#endif /* __cplusplus */\n";
       }
-      print "\n";
-      print "#ifdef __cplusplus\n";
-      print "}\n";
-      print "#endif /* __cplusplus */\n";
     }
 
     sub function {
