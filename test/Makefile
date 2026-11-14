@@ -13,7 +13,10 @@ all: check
 AUTOOPEN_SFD = $(SFD) $(wildcard autoopen/*_lib.sfd)
 base = '^void\* $(1)\[2\] = { (void\*)-1, "$(2)" };'
 
-check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/clib.h check-autoopen
+# What goes into a link library besides the bases
+LIB = $(OUT)/stubs/.done $(OUT)/lvolib.s
+
+check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/clib.h check-autoopen $(LIB)
 	grep -q '^#define TestAdd(___a, ___b)' $(OUT)/inline.h
 	grep -q '^#define TestLookup(___list, ___name)' $(OUT)/inline.h
 	grep -q '^#define TestPrintf(' $(OUT)/inline.h
@@ -21,8 +24,24 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 	grep -q 'TestBase' $(OUT)/proto.h
 	grep -q '^#  include <inline/test_protos.h>' $(OUT)/proto.h
 	grep -q '_LVOTestAdd' $(OUT)/lvo.i
+	! grep -q '_LVOTestPrivate' $(OUT)/lvo.i
 	grep -q 'LONG TestAdd(' $(OUT)/clib.h
+	grep -q '^  return __TestAdd_base(BASE_NAME, ___a, ___b);' $(OUT)/stubs/TestAdd.c
+	grep -q '^  __TestReset_base(BASE_NAME);' $(OUT)/stubs/TestReset.c
+	grep -q '^#define __TestPrintfA_base(' $(OUT)/stubs/TestPrintf.c
+	grep -q '^  return __TestPrintfA_base(BASE_NAME, ___format, (APTR) (&___format + 1));' $(OUT)/stubs/TestPrintf.c
+	test ! -e $(OUT)/stubs/TestPrivate.c
+	grep -q '^_LVOTestAdd = -30' $(OUT)/lvolib.s
+	grep -q '^_LVOTestPrivate = -54' $(OUT)/lvolib.s
 	@echo "sfdc smoke test passed"
+
+# With a cross compiler, what goes into a link library also compiles:
+#   make -C test check-compile CC=m68k-amigaos-gcc
+check-compile: $(LIB) $(OUT)/autoopen/.done
+	for f in $(OUT)/stubs/*.c $(OUT)/autoopen/test.c $(OUT)/lvolib.s; do \
+	  $(CC) -Os -Wall -Werror -D__libnix__ -c $$f -o $(OUT)/compile.o || exit 1; \
+	done
+	@echo "sfdc compile test passed"
 
 # One run for all the SFD files, which must not warn.  A gadget, image or
 # datatype class gets its directory; exec.library, a device and an SFD file
@@ -46,6 +65,14 @@ $(OUT)/autoopen/.done: $(AUTOOPEN_SFD) $(SFDC) | $(OUT)
 	$(SFDC) --quiet --target=m68k-amigaos --mode=autoopen --output=$(OUT)/autoopen/%n.c $(AUTOOPEN_SFD) 2>$@.err
 	mv $@.err $@
 
+$(OUT)/stubs/.done: $(SFD) $(SFDC) | $(OUT)
+	rm -rf $(OUT)/stubs && mkdir -p $(OUT)/stubs
+	$(SFDC) --target=m68k-gcc-amigaos --mode=stubs --output=$(OUT)/stubs/%f.c $<
+	touch $@
+
+$(OUT)/lvolib.s: $(SFD) $(SFDC) | $(OUT)
+	$(SFDC) --target=m68k-gcc-amigaos --mode=lvolib --output=$@ $<
+
 $(OUT)/inline.h: $(SFD) $(SFDC) | $(OUT)
 	$(SFDC) --target=m68k-gcc-amigaos --mode=macros --output=$@ $<
 
@@ -64,4 +91,4 @@ $(OUT)/clib.h: $(SFD) $(SFDC) | $(OUT)
 clean:
 	rm -rf $(OUT)
 
-.PHONY: all check check-autoopen clean
+.PHONY: all check check-autoopen check-compile clean

@@ -3,6 +3,8 @@
 
 BEGIN {
     package Stub;
+    use strict;
+    use warnings;
 
     sub new {
       my $proto  = shift;
@@ -116,7 +118,7 @@ BEGIN {
       if ($prototype->{type} eq 'varargs' && $decl_regular) {
           my $rproto = $prototype->{real_prototype};
 
-          print "__inline $$rproto{'return'} $$rproto{'funcname'}(";
+          print "$$rproto{'return'} $$rproto{'funcname'}(";
           if (!$prototype->{nb}) {
             if ($$rproto{'numargs'} == 0) {
                 print "BASE_PAR_DECL0";
@@ -152,7 +154,7 @@ BEGIN {
         $rettype_postfix = $2;
       }
 
-      print "__inline $rettype_prefix\n";
+      print "$rettype_prefix\n";
       print "$$prototype{'funcname'}(";
       if (!$prototype->{nb}) {
           if ($$prototype{'numargs'} == 0) {
@@ -229,35 +231,9 @@ BEGIN {
       my $argstr;
 
       if ($$prototype{'type'} eq 'varargs') {
-          if ($prototype->{subtype} eq 'printfcall') {
-            if ($argnum < $$prototype{'numargs'} - 1) {
-                $argstr = $argname;
-            }
-            elsif ($argnum == $$prototype{'numargs'} - 1) {
-                my $vartype  =
-                  $$prototype{'argtypes'}[$$prototype{'numargs'} - 1];
-                my $argnm =
-                  $$prototype{'___argnames'}[$$prototype{'numargs'} - 2];
-                $argstr = "($vartype) (&$argnm + 1)";
-            }
-            else {
-                $argstr = '';
-            }
-          }
-          else {
-            # tagcall/methodcall
-            if ($argnum < $$prototype{'numargs'} - 2) {
-                $argstr = $argname;
-            }
-            elsif ($argnum == $$prototype{'numargs'} - 2) {
-                my $vartype =
-                  $$prototype{'argtypes'}[$$prototype{'numargs'} - 1];
-                $argstr = "($vartype) &$argname";
-            }
-            else {
-                $argstr = '';
-            }
-          }
+          $argstr = $self->varargs_arg (prototype => $prototype,
+                                argname   => $argname,
+                                argnum    => $argnum);
       }
       elsif ($prototype->{type} eq 'cfunction') {
           $argstr = $argname;
@@ -270,6 +246,44 @@ BEGIN {
       if ($argstr ne '') {
           print ($argnum != 0 ? ", $argstr" : $argstr);
       }
+    }
+
+    # What a varargs function passes to the real one for argument number
+    # argnum: the argument itself, the address of the argument array in
+    # place of the first variable argument, or nothing.
+
+    sub varargs_arg {
+      my $self      = shift;
+      my %params    = @_;
+      my $prototype = $params{'prototype'};
+      my $argname   = $params{'argname'};
+      my $argnum    = $params{'argnum'};
+
+      if ($prototype->{subtype} eq 'printfcall') {
+          if ($argnum < $$prototype{'numargs'} - 1) {
+            return $argname;
+          }
+          elsif ($argnum == $$prototype{'numargs'} - 1) {
+            my $vartype  =
+                $$prototype{'argtypes'}[$$prototype{'numargs'} - 1];
+            my $argnm =
+                $$prototype{'___argnames'}[$$prototype{'numargs'} - 2];
+            return "($vartype) (&$argnm + 1)";
+          }
+      }
+      else {
+          # tagcall/methodcall
+          if ($argnum < $$prototype{'numargs'} - 2) {
+            return $argname;
+          }
+          elsif ($argnum == $$prototype{'numargs'} - 2) {
+            my $vartype =
+                $$prototype{'argtypes'}[$$prototype{'numargs'} - 1];
+            return "($vartype) &$argname";
+          }
+      }
+
+      return '';
     }
 
     sub function_end {
