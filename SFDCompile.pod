@@ -136,6 +136,14 @@ like B<clib>, but for internal use by library and device developers.
 Generate an assembler LVO include file.
 
 
+=item B<lvolib>
+
+Generate an assembler source that defines the LVOs as global symbols,
+those of private functions included. It is usually placed in a link
+library, for programs that reference the C<_LVO> symbols without
+including the LVO files.
+
+
 =item B<macros>
 
 Generate a header file containing F<gcc> specific preprocessor macros,
