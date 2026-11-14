@@ -248,7 +248,7 @@ if ($#ARGV < 0) {
 
 $mode = lc $mode;
 
-if (!($mode =~ /^(autoopen|clib|dump|fd|functable|libproto|lvo|interface|macros|gcc-inline|proto|pragmas|stubs|gateproto|gatestubs|verify)$/)) {
+if (!($mode =~ /^(autoopen|clib|dump|fd|functable|libproto|lvo|lvolib|interface|macros|gcc-inline|proto|pragmas|stubs|gateproto|gatestubs|verify)$/)) {
     pod2usage (-message => "Unknown mode specified. Use --help for a list.",
              -verbose => 0,
              -exitval => 10);
@@ -325,6 +325,11 @@ for my $i ( 0 .. $#ARGV ) {
           last;
       };
 
+      /^lvolib$/ && do {
+          $obj = LVOLib->new( sfd => $sfd );
+          last;
+      };
+
       /^interface$/ && do {
           $obj = $$classes{'interface'}->new( sfd => $sfd );
           last;
@@ -389,6 +394,12 @@ for my $i ( 0 .. $#ARGV ) {
     for my $j ( 0 .. $num + 1) {
       my $prototype = $$sfd{'prototypes'}[$j];
       my $funcname  = $$prototype{'funcname'};
+
+      # A private function gets no stub, and no file of its own for none
+      if ($mode eq 'stubs' && $output =~ /%f/ && $$prototype{'private'}) {
+          next;
+      }
+
       if (!defined ($funcname) || will_close_output ($sfd, $funcname) != 0) {
           $obj->footer ();
       }
