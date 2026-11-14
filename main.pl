@@ -994,7 +994,10 @@ sub BEGIN {
 ### close_output: Close the output file if necessary  #########################
 
     sub close_output () {
+      # Reopen the saved STDOUT at once: otherwise the next file opened,
+      # such as the next SFD file, gets its descriptor
       close (STDOUT);
+      open (STDOUT, ">&OLDOUT");
       $old_output = '';
     }
 
