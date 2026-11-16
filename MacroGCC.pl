@@ -57,10 +57,10 @@ BEGIN {
 #if defined(__GNUC__)
 # if (__GNUC__ >= 8)
 #  define AMIGA_VA_WRAPPER_ATTR \
-    __attribute__((noipa, noinline, optimize("omit-frame-pointer"), optimize("O1")))
+    __attribute__((unused, noipa, noinline, optimize("omit-frame-pointer"), optimize("O1")))
 # else
 #  define AMIGA_VA_WRAPPER_ATTR \
-    __attribute__((noinline, optimize("omit-frame-pointer"), optimize("O1")))
+    __attribute__((unused, noinline, optimize("omit-frame-pointer"), optimize("O1")))
 # endif
 #else
 # define AMIGA_VA_WRAPPER_ATTR

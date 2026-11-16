@@ -16,6 +16,12 @@ base = '^void\* $(1)\[2\] = { (void\*)-1, "$(2)" };'
 # What goes into a link library besides the bases
 LIB = $(OUT)/stubs/.done $(OUT)/lvolib.s
 
+# The headers a program includes, laid out as in an include directory
+TEST_INCLUDES = \
+	$(OUT)/include/proto/test.h \
+	$(OUT)/include/inline/test.h \
+	$(OUT)/include/clib/test_protos.h
+
 check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/clib.h check-autoopen $(LIB)
 	grep -q '^#define TestAdd(___a, ___b)' $(OUT)/inline.h
 	grep -q '^#define TestLookup(___list, ___name)' $(OUT)/inline.h
@@ -37,10 +43,11 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 
 # With a cross compiler, what goes into a link library also compiles:
 #   make -C test check-compile CC=m68k-amigaos-gcc
-check-compile: $(LIB) $(OUT)/autoopen/.done
+check-compile: $(LIB) $(OUT)/autoopen/.done $(TEST_INCLUDES)
 	for f in $(OUT)/stubs/*.c $(OUT)/autoopen/test.c $(OUT)/lvolib.s; do \
 	  $(CC) -Os -Wall -Werror -D__libnix__ -c $$f -o $(OUT)/compile.o || exit 1; \
 	done
+	$(CC) -Os -Wall -Wextra -Werror -I$(OUT)/include -c include.c -o $(OUT)/compile.o
 	@echo "sfdc compile test passed"
 
 # One run for all the SFD files, which must not warn.  A gadget, image or
@@ -75,6 +82,14 @@ $(OUT)/lvolib.s: $(SFD) $(SFDC) | $(OUT)
 
 $(OUT)/inline.h: $(SFD) $(SFDC) | $(OUT)
 	$(SFDC) --target=m68k-gcc-amigaos --mode=macros --output=$@ $<
+
+$(OUT)/include/proto/test.h: MODE = proto
+$(OUT)/include/inline/test.h: MODE = macros
+$(OUT)/include/clib/test_protos.h: MODE = clib
+
+$(TEST_INCLUDES): $(SFD) $(SFDC)
+	mkdir -p $(dir $@)
+	$(SFDC) --target=m68k-gcc-amigaos --mode=$(MODE) --output=$@ $<
 
 $(OUT)/inline_vbcc.h: $(SFD) $(SFDC) | $(OUT)
 	$(SFDC) --target=m68kvbcc-amigaos --mode=macros --output=$@ $<
