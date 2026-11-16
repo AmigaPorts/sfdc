@@ -54,10 +54,13 @@ BEGIN {
       print "#endif\n\n";
       
       print <<'EOF';
+/* The varargs wrappers find their arguments after the last named one, on
+   the stack, so they must be real calls that IPA leaves alone.  Before
+   noipa, -O1 for the wrapper keeps -O2's IPA passes off it. */
 #if defined(__GNUC__)
 # if (__GNUC__ >= 8)
 #  define AMIGA_VA_WRAPPER_ATTR \
-    __attribute__((unused, noipa, noinline, optimize("omit-frame-pointer"), optimize("O1")))
+    __attribute__((unused, noipa, noinline, optimize("omit-frame-pointer")))
 # else
 #  define AMIGA_VA_WRAPPER_ATTR \
     __attribute__((unused, noinline, optimize("omit-frame-pointer"), optimize("O1")))
