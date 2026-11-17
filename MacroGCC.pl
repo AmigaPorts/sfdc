@@ -58,15 +58,20 @@ BEGIN {
    the stack, so they must be real calls that IPA leaves alone.  Before
    noipa, -O1 for the wrapper keeps -O2's IPA passes off it. */
 #if defined(__GNUC__)
-# if (__GNUC__ >= 8)
-#  define AMIGA_VA_WRAPPER_ATTR \
-    __attribute__((unused, noipa, noinline, optimize("omit-frame-pointer")))
-# else
-#  define AMIGA_VA_WRAPPER_ATTR \
-    __attribute__((unused, noinline, optimize("omit-frame-pointer"), optimize("O1")))
-# endif
+  #if (__GNUC__ >= 8)
+    #define AMIGA_VA_WRAPPER_ATTR \
+      __attribute__((unused, noipa, noinline, optimize("omit-frame-pointer")))
+  #else
+    #define AMIGA_VA_WRAPPER_ATTR \
+      __attribute__((unused, noinline, optimize("omit-frame-pointer"), optimize("O1")))
+  #endif
+  /* The varargs wrappers are inline only so that an unused one is not
+     compiled; AMIGA_VA_WRAPPER_ATTR keeps them out of line, which gcc
+     would warn about.  */
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wattributes"
 #else
-# define AMIGA_VA_WRAPPER_ATTR
+  #define AMIGA_VA_WRAPPER_ATTR
 #endif
 
 EOF
@@ -77,6 +82,15 @@ EOF
           print "#endif /* !$self->{BASE} */\n";
           print "\n";
       }
+    }
+
+    sub footer {
+      my $self = shift;
+
+      print "#if defined(__GNUC__)\n";
+      print "  #pragma GCC diagnostic pop\n";
+      print "#endif\n\n";
+      $self->SUPER::footer (@_);
     }
 
     # Helper: Check if a function is varargs
@@ -229,7 +243,7 @@ EOF
             my ($explicit_base) = @_;
 
             print "AMIGA_VA_WRAPPER_ATTR\n";
-            print "static __stdargs $ret __${fname}_va(";
+            print "static __inline__ __stdargs $ret __${fname}_va(";
             if ($explicit_base) {
                 print "void *const __base __asm(\"a6\"), ";
             }
@@ -301,7 +315,7 @@ EOF
 
         # Emit helper definition
         print "AMIGA_VA_WRAPPER_ATTR\n";
-        print "static __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
+        print "static __inline__ __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
         if (@param_decl) {
             print ", ";
         }
@@ -368,7 +382,7 @@ EOF
      
         # Emit helper definition - base is first parameter in a6
         print "AMIGA_VA_WRAPPER_ATTR\n";
-        print "static __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
+        print "static __inline__ __stdargs $ret __${fname}_va(void *const __base __asm(\"a6\")";
         if (@param_decl) {
             print ", ";
         }

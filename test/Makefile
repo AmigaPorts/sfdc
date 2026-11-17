@@ -48,6 +48,8 @@ check-compile: $(LIB) $(OUT)/autoopen/.done $(TEST_INCLUDES)
 	  $(CC) -Os -Wall -Werror -D__libnix__ -c $$f -o $(OUT)/compile.o || exit 1; \
 	done
 	$(CC) -Os -Wall -Wextra -Werror -I$(OUT)/include -c include.c -o $(OUT)/compile.o
+	$(CC) -O0 -I$(OUT)/include -S include.c -o $(OUT)/include.s
+	! grep -q '_va:' $(OUT)/include.s
 	@echo "sfdc compile test passed"
 
 # One run for all the SFD files, which must not warn.  A gadget, image or
