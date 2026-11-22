@@ -347,6 +347,65 @@ easy to make for example a library that can be compiled or
 cross-compiiled for any of the mentioned architectures.
 
 
+=head1 FD FILES
+
+=over 4
+
+=item F<fd2sfd> [B<--quiet>] I<fd-file> I<clib-file> [[B<-o>] I<output-file>]
+
+F<fd2sfd> takes an FD file and a clib header and converts them to an
+SFD file. The FD file has the offsets, the registers and the argument
+names; the prototypes of the clib header have the types, and the
+varargs versions and aliases of the functions:
+
+=over 4
+
+=item *
+
+A public function needs a prototype with as many arguments, and an
+argument of a 64 bit type (C<double>, C<QUAD>) two registers; else
+it's an error, and nothing is written. A private function without a
+prototype takes and returns C<ULONG>s.
+
+=item *
+
+A function before the first C<##public> or C<##private> line is
+public if it has a prototype.
+
+=item *
+
+A prototype with C<...> whose name derives from a function's
+(C<OpenWindowTags> from C<OpenWindowTagList>, C<Printf> from
+C<VPrintf>) is its varargs version; one with the same arguments, or
+the first ones, and a name that is the function's plus C<TagList> or
+a digit (C<SystemTagList>, C<DoPkt0>) is an alias. Other prototypes
+get a warning.
+
+=item *
+
+The library name comes from the FD file name
+(F<I<E<lt>nameE<gt>>_lib.fd>), and its kind from a list of the known
+devices, resources and BOOPSI classes.
+
+=back
+
+With B<--no-clib> instead of a clib file, every type is C<ULONG>: enough
+for the files that have none, such as LVO and pragma files.
+B<--strict> is accepted, for scripts written for the old F<fd2sfd>, and
+is always the case.
+
+Convert once, and maintain the SFD file: a function's version and the
+comments of the prototypes are in the SFD file only.
+
+=item F<fd2pragma>
+
+F<fd2pragma> emulates the interface of the obsolete C program with the
+same name, for old build scripts. Don't use it: convert the FD file
+with F<fd2sfd> and run F<sfdc> on the SFD file.
+
+=back
+
+
 =head1 RETURN VALUE
 
 Returns 0 on success and 10 on errors.

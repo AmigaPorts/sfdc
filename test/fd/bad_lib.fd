@@ -1,0 +1,18 @@
+* The errors of an FD file and its prototypes in bad_protos.h
+##base _BadBase
+##bias 30
+##public
+BadAdd(a,b)(d0,d1)
+* No prototype in the clib file
+BadMissing(x)(d0)
+* Fewer arguments in the prototype than in the FD file
+BadShort(a,b)(d0,d1)
+* More registers than arguments
+BadRegs(a)(d0,d1)
+* Not a register
+BadReg(a)(d8)
+This is not an FD line
+##private
+* No prototype is fine for a private function
+BadPrivate(a)(d0)
+##end

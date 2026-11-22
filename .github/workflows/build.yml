@@ -18,7 +18,9 @@ jobs:
         run: ./configure && make
 
       - name: Smoke test
-        run: make -C test check
+        # No Amiga compiler here: CC=true skips compiling the generated
+        # code, which the toolchain's make check-sfdc does
+        run: make -C test CC=true
 
       - name: Upload sfdc
         uses: actions/upload-artifact@v7
