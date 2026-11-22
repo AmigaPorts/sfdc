@@ -7,9 +7,9 @@
 SampleFirst(a)(d0)
 SampleReserved()()
 ##public
-* Plain calls
+* Plain calls, one ending with a ';'
 SampleAdd(a,b)(d0,d1)
-SampleFind(list,name)(a0,a1)
+SampleFind(list,name)(a0,a1);
 * Tag lists, with varargs versions named after them
 SampleOpenA(name,tags)(a0,a1)
 SampleCreateTagList(tags)(a0)

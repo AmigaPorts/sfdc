@@ -336,7 +336,8 @@ BEGIN {
         elsif (/^##end\s*$/) {
           last;
         }
-        elsif (/^\s*(\w+)\s*\(([^()]*)\)\s*\(([^()]*)\)\s*$/) {
+        # Some FD files end the line with a ';', as in a C declaration
+        elsif (/^\s*(\w+)\s*\(([^()]*)\)\s*\(([^()]*)\)\s*;?\s*$/) {
           my ($name, $params, $regs) = ($1, $2, $3);
 
           push @{$self->{funcs}}, {

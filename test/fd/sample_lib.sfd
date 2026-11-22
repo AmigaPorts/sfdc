@@ -16,7 +16,7 @@
 LONG SampleFirst(LONG a) (d0)
 ==private
 ULONG SampleReserved() ()
-* Plain calls
+* Plain calls, one ending with a ';'
 ==public
 LONG SampleAdd(LONG a, LONG b) (d0,d1)
 struct Node *SampleFind(struct List *list, CONST_STRPTR name) (a0,a1)
