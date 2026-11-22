@@ -59,7 +59,7 @@ BEGIN {
            $prototype->{subtype} eq 'methodcall')) {
           # Nuke second last argument (=first varargs argument)
           # or it will be placed in a register!
-          for my $i (0 .. $#{@{$prototype->{args}}}) {
+          for my $i (0 .. $#{$prototype->{args}}) {
             if ($i != $prototype->{numargs} - 2 ) {
                 print ", $prototype->{args}[$i]";
           }
