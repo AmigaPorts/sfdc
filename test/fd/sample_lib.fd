@@ -1,0 +1,36 @@
+* "sample.library"
+* An FD file for the FD tests: the cases of the conversion to SFD
+* (bad_lib.fd has the errors)
+##base _SampleBase
+##bias 30
+* Before ##public: public with a prototype, private without
+SampleFirst(a)(d0)
+SampleReserved()()
+##public
+* Plain calls
+SampleAdd(a,b)(d0,d1)
+SampleFind(list,name)(a0,a1)
+* Tag lists, with varargs versions named after them
+SampleOpenA(name,tags)(a0,a1)
+SampleCreateTagList(tags)(a0)
+SampleNew(tags)(a1)
+* A varargs version named in the table of exceptions
+VPrintf(format,args)(d1,d2)
+* Pointers to functions
+SampleHook(hook,data)(a0,a1)
+SampleFree(data,freefunc)(a0,a1)
+* A double, in two registers
+SampleScale(value,factor)(d0/d1,d2)
+##bias 90
+* A gap in the offsets
+SampleLater()()
+* dos.library aliases
+System(command,tags)(d1,d2)
+* DoPkt() and DoPkt0() to DoPkt4()
+DoPkt(port,action,arg1,arg2,arg3,arg4,arg5)(d1,d2,d3,d4,d5,d6,d7)
+* An array argument, and a type from a typedef
+SampleName(buffer,id)(a0,d0)
+##private
+SamplePrivate(a)(d0)
+SamplePrivateNoProto(a)(d0)
+##end

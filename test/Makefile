@@ -1,13 +1,20 @@
 # Smoke test: generate the header flavours the m68k-amigaos toolchain
 # asks sfdc for and check that the expected symbols come out.
 #
-#   make -C test check [SFDC=../sfdc]
+#   make -C test [SFDC=../sfdc] [CC=m68k-amigaos-gcc]
 
 SFDC ?= ../sfdc
+FD2SFD ?= $(dir $(SFDC))fd2sfd
+FD2PRAGMA ?= $(dir $(SFDC))fd2pragma
 SFD = test_lib.sfd
 OUT = out
 
-all: check
+# The generated code is compiled with an Amiga compiler (check-compile)
+ifeq ($(origin CC),default)
+CC = m68k-amigaos-gcc
+endif
+
+all: check check-fd check-compile
 
 # The library bases for libnix's startup code to open, one per kind of name
 AUTOOPEN_SFD = $(SFD) $(wildcard autoopen/*_lib.sfd)
@@ -51,6 +58,34 @@ check-compile: $(LIB) $(OUT)/autoopen/.done $(TEST_INCLUDES)
 	$(CC) -O0 -I$(OUT)/include -S include.c -o $(OUT)/include.s
 	! grep -q '_va:' $(OUT)/include.s
 	@echo "sfdc compile test passed"
+
+# FD input: fd/sample_lib.fd and fd/sample_protos.h have a case of each
+# rule of the conversion, fd/bad_lib.fd and fd/bad_protos.h its errors
+check-fd: $(FD2SFD) $(FD2PRAGMA) $(OUT)/fd/test_lib.fd $(OUT)/fd/test_protos.h
+	$(FD2SFD) fd/sample_lib.fd fd/sample_protos.h -o $(OUT)/fd/sample_lib.sfd 2>$(OUT)/fd/sample.err
+	cmp fd/sample_lib.sfd $(OUT)/fd/sample_lib.sfd
+	cmp fd/sample.err $(OUT)/fd/sample.err
+	! $(FD2SFD) fd/bad_lib.fd fd/bad_protos.h -o $(OUT)/fd/bad_lib.sfd 2>$(OUT)/fd/bad.err
+	cmp fd/bad.err $(OUT)/fd/bad.err
+	test ! -e $(OUT)/fd/bad_lib.sfd
+	# The FD and clib files written from an SFD file convert back to it
+	$(FD2SFD) $(OUT)/fd/test_lib.fd $(OUT)/fd/test_protos.h -o $(OUT)/fd/test_lib.sfd
+	$(SFDC) --quiet --target=m68k-gcc-amigaos --mode=macros $(SFD) >$(OUT)/fd/test-from-sfd.h
+	$(SFDC) --quiet --target=m68k-gcc-amigaos --mode=macros $(OUT)/fd/test_lib.sfd | cmp $(OUT)/fd/test-from-sfd.h -
+	# fd2pragma: both of its command lines, and its file names
+	$(FD2PRAGMA) fd/sample_lib.fd CLIB fd/sample_protos.h TO $(OUT)/fd SPECIAL 40 2>/dev/null | grep -qx 'ResultFile: $(OUT)/fd/sample.h'
+	$(SFDC) --quiet --target=m68k-gcc-amigaos --mode=macros $(OUT)/fd/sample_lib.sfd | cmp $(OUT)/fd/sample.h -
+	$(FD2PRAGMA) -i fd/sample -s 21 -t $(OUT)/fd 2>/dev/null | grep -qx 'ResultFile: $(OUT)/fd/sample_lib.i'
+	! $(FD2PRAGMA) -i fd/sample_lib.fd -s 40 -t $(OUT)/fd >/dev/null 2>&1
+	! $(FD2PRAGMA) -i fd/sample_lib.fd -s 12 -t $(OUT)/fd >/dev/null 2>&1
+	@echo "sfdc FD test passed"
+
+$(OUT)/fd/test_lib.fd: MODE = fd
+$(OUT)/fd/test_protos.h: MODE = clib
+
+$(OUT)/fd/test_lib.fd $(OUT)/fd/test_protos.h: $(SFD) $(SFDC)
+	mkdir -p $(dir $@)
+	$(SFDC) --quiet --mode=$(MODE) --output=$@ $<
 
 # One run for all the SFD files, which must not warn.  A gadget, image or
 # datatype class gets its directory; exec.library, a device and an SFD file
@@ -108,4 +143,4 @@ $(OUT)/clib.h: $(SFD) $(SFDC) | $(OUT)
 clean:
 	rm -rf $(OUT)
 
-.PHONY: all check check-autoopen check-compile clean
+.PHONY: all check check-autoopen check-compile check-fd clean

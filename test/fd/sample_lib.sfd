@@ -1,0 +1,56 @@
+* Converted by sfdc from fd/sample_lib.fd and fd/sample_protos.h.
+==base _SampleBase
+==basetype struct Library *
+==libname sample.library
+==include <exec/types.h>
+==include <exec/lists.h>
+==include <utility/tagitem.h>
+==include <utility/hooks.h>
+==typedef LONG SampleId
+* "sample.library"
+* An FD file for the FD tests: the cases of the conversion to SFD
+* (bad_lib.fd has the errors)
+* Before ##public: public with a prototype, private without
+==bias 30
+==public
+LONG SampleFirst(LONG a) (d0)
+==private
+ULONG SampleReserved() ()
+* Plain calls
+==public
+LONG SampleAdd(LONG a, LONG b) (d0,d1)
+struct Node *SampleFind(struct List *list, CONST_STRPTR name) (a0,a1)
+* Tag lists, with varargs versions named after them
+APTR SampleOpenA(CONST_STRPTR name, const struct TagItem *tags) (a0,a1)
+==varargs
+APTR SampleOpen(CONST_STRPTR name, Tag tag1, ...) (a0,a1)
+APTR SampleCreateTagList(struct TagItem *tags) (a0)
+==varargs
+APTR SampleCreateTags(Tag tags, ...) (a0)
+APTR SampleNew(struct TagItem *tags) (a1)
+* A varargs version named in the table of exceptions
+LONG VPrintf(CONST_STRPTR format, CONST APTR args) (d1,d2)
+==varargs
+LONG Printf(CONST_STRPTR format, ...) (d1,d2)
+* Pointers to functions
+ULONG SampleHook(ULONG (*hook)(struct Hook *, APTR), APTR data) (a0,a1)
+VOID SampleFree(APTR data, VOID (*freefunc)()) (a0,a1)
+* A double, in two registers
+double SampleScale(double value, LONG factor) (d0-d1,d2)
+* A gap in the offsets
+==bias 90
+VOID SampleLater() ()
+* dos.library aliases
+LONG System(CONST_STRPTR command, const struct TagItem *tags) (d1,d2)
+==alias
+LONG SystemTagList(CONST_STRPTR command, const struct TagItem *tags) (d1,d2)
+* DoPkt() and DoPkt0() to DoPkt4()
+LONG DoPkt(struct MsgPort *port, LONG action, LONG arg1, LONG arg2, LONG arg3, LONG arg4, LONG arg5) (d1,d2,d3,d4,d5,d6,d7)
+==alias
+LONG DoPkt0(struct MsgPort *port, LONG action) (d1,d2)
+* An array argument, and a type from a typedef
+UBYTE *SampleName(UBYTE *buffer, SampleId id) (a0,d0)
+==private
+LONG SamplePrivate(LONG a) (d0)
+ULONG SamplePrivateNoProto(ULONG a) (d0)
+==end

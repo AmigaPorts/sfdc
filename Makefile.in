@@ -18,14 +18,15 @@ MAIN		= main.pl
 CLASSES		= $(sort $(wildcard [A-Z]*.pl))
 PODS		= SFDCompile.pod
 EXECUTABLE	= sfdc
+WRAPPERS	= fd2sfd fd2pragma
 MAN		= sfdc.1
 TXT		= sfdc.txt
 
 
-all:	$(EXECUTABLE) $(MAN) $(TXT)
+all:	$(EXECUTABLE) $(WRAPPERS) $(MAN) $(TXT)
 
 clean:
-	$(RM) $(EXECUTABLE) $(MAN) $(TXT) config.log \
+	$(RM) $(EXECUTABLE) $(WRAPPERS) $(MAN) $(TXT) config.log \
 	      $(EXECUTABLE)-$(VERSION).tar.gz $(EXECUTABLE).lha
 
 distclean:	clean
@@ -33,7 +34,7 @@ distclean:	clean
 
 install:	all
 	$(INSTALL) -d $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man1
-	$(INSTALL_PROGRAM) $(EXECUTABLE) $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(WRAPPERS) $(DESTDIR)$(bindir)
 	$(INSTALL_DATA) $(MAN) $(DESTDIR)$(mandir)/man1
 
 # source tarball of the checked-in tree
@@ -48,6 +49,13 @@ lha:		all tgz
 
 $(EXECUTABLE):	$(MAIN) $(CLASSES) $(PODS)
 	sed "s/SFDC_VERSION/$(VERSION)/g" $^ | sed "s/SFDC_DATE/$(DATE)/g" >$@
+	chmod +x $@
+
+Makefile: Makefile.in config.status
+	./config.status
+
+$(WRAPPERS): %: %.pl
+	sed "s/SFDC_VERSION/$(VERSION)/g" $< >$@
 	chmod +x $@
 
 $(MAN):	$(EXECUTABLE)

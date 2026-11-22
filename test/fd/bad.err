@@ -1,0 +1,6 @@
+fd/bad_lib.fd:14: error: not an FD line: This is not an FD line
+fd/bad_protos.h:9: warning: BadUnknown is not in the FD file
+fd/bad_lib.fd:7: error: BadMissing has no prototype
+fd/bad_lib.fd:9: error: BadShort has 2 arguments, and 1 in fd/bad_protos.h:6
+fd/bad_lib.fd:11: error: BadRegs: more registers than arguments
+fd/bad_lib.fd:13: error: d8 is not a register
