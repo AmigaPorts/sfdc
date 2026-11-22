@@ -378,8 +378,9 @@ A prototype with C<...> whose name derives from a function's
 (C<OpenWindowTags> from C<OpenWindowTagList>, C<Printf> from
 C<VPrintf>) is its varargs version; one with the same arguments, or
 the first ones, and a name that is the function's plus C<TagList> or
-a digit (C<SystemTagList>, C<DoPkt0>) is an alias. Other prototypes
-get a warning.
+a digit (C<SystemTagList>, C<DoPkt0>) is an alias, and so is the
+C<MinList> version of a list function (C<AddHeadMinList> of
+C<AddHead>). Other prototypes get a warning.
 
 =item *
 

@@ -18,6 +18,7 @@ LONG SampleAdd(LONG a, LONG b);
 /* Not an alias of SampleAdd(): the arguments differ */
 LONG SampleAdd2(struct List *list, LONG b);
 struct Node *SampleFind(struct List *list, CONST_STRPTR name);
+struct MinNode *SampleFindMinNode(struct MinList *list, CONST_STRPTR name);
 APTR SampleOpenA(CONST_STRPTR name, const struct TagItem *tags);
 APTR SampleOpen(CONST_STRPTR name, Tag tag1, ...);
 APTR SampleCreateTagList(struct TagItem *tags);

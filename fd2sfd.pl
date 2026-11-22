@@ -453,6 +453,13 @@ BEGIN {
             $in_fd{$_} && $types && @types <= @$types &&
               "@types" eq "@{$types}[0 .. $#types]";
           } ($name =~ /^(\w+)TagList$/, $name =~ /^(\w+)\d$/, "${name}TagList");
+
+          # The MinList version of a list function takes a MinList and
+          # MinNodes for its List and Nodes (InsertMinNode, AddHeadMinList)
+          if (!$of && $name =~ /^(\w+)Min(Node|List)$/ && $in_fd{$1} &&
+              $$protos{$1} && @{$$protos{$1}{'types'}} == @types) {
+            $of = $1;
+          }
           $extra{$name} = { type => 'alias', of => $of } if $of;
         }
 
