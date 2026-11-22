@@ -56,7 +56,7 @@ BEGIN {
           if ($$prototype{'comment'} ne '') {
             my $comment = $$prototype{'comment'};
 
-            $comment =~ s/^/\*/m;
+            $comment =~ s/^/\*/mg;
             print "$comment\n";
           }
           print "$$prototype{'funcname'}(";
