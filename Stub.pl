@@ -134,7 +134,7 @@ BEGIN {
       }
 
       if ($prototype->{type} eq 'cfunction' &&
-          $prototype->{argnames}[$#{@{$prototype->{argnames}}}] eq '...') {
+          $prototype->{argnames}[$#{$prototype->{argnames}}] eq '...') {
           print "#if 0\n";
           print "/* Unsupported */\n";
       }
@@ -296,7 +296,7 @@ BEGIN {
       print "}\n";
 
       if ($prototype->{type} eq 'cfunction' &&
-          $prototype->{argnames}[$#{@{$prototype->{argnames}}}] eq '...') {
+          $prototype->{argnames}[$#{$prototype->{argnames}}] eq '...') {
           print "/* Unsupported */\n";
           print "#endif\n";
       }
