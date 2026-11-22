@@ -13,9 +13,12 @@ AC_SUBST(VERSION)
 AC_SUBST(DATE)
 
 # Checks for programs.
-AC_CHECK_PROGS( PERL,     perl,     AC_ERROR("Perl is required") )
-AC_CHECK_PROGS( POD2TEXT, pod2text, AC_ERROR("pod2text is required") )
-AC_CHECK_PROGS( POD2MAN,  pod2man,  AC_ERROR("pod2man is required") )
+AC_CHECK_PROGS([PERL], [perl])
+AS_IF([test -z "$PERL"], [AC_MSG_ERROR([Perl is required])])
+AC_CHECK_PROGS([POD2TEXT], [pod2text])
+AS_IF([test -z "$POD2TEXT"], [AC_MSG_ERROR([pod2text is required])])
+AC_CHECK_PROGS([POD2MAN], [pod2man])
+AS_IF([test -z "$POD2MAN"], [AC_MSG_ERROR([pod2man is required])])
 AC_PROG_INSTALL
 
 # Checks for libraries.
