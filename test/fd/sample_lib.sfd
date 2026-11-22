@@ -20,6 +20,8 @@ ULONG SampleReserved() ()
 ==public
 LONG SampleAdd(LONG a, LONG b) (d0,d1)
 struct Node *SampleFind(struct List *list, CONST_STRPTR name) (a0,a1)
+==alias
+struct MinNode *SampleFindMinNode(struct MinList *list, CONST_STRPTR name) (a0,a1)
 * Tag lists, with varargs versions named after them
 APTR SampleOpenA(CONST_STRPTR name, const struct TagItem *tags) (a0,a1)
 ==varargs
