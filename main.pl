@@ -193,6 +193,7 @@ my $classes;
 Getopt::Long::Configure ("bundling");
 
 my $gateprefix = '';
+my $headername = '';
 my $help       = '0';
 my $libarg     = 'none';
 my $libprefix  = '';
@@ -201,13 +202,13 @@ my $addvectors = 'none';
 my $man        = '0';
 my $mode       = 'verify';
 my $output     = '-';
-my $protoname  = '';
 my $quiet      = '0';
 my $target     = 'm68k-unknown-amigaos';
 my $version    = '0';
 
 GetOptions ('addvectors=s' => \$addvectors,
             'gateprefix=s' => \$gateprefix,
+            'headername=s' => \$headername,
             'help|h'       => \$help,
             'libarg=s'     => \$libarg,
             'libprefix=s'  => \$libprefix,
@@ -215,7 +216,6 @@ GetOptions ('addvectors=s' => \$addvectors,
           'man'          => \$man,
           'mode=s'       => \$mode,
           'output|o=s'   => \$output,
-          'protoname=s'  => \$protoname,
           'quiet|q'      => \$quiet,
           'target=s'     => \$target,
           'version|v'    => \$version) or exit 10;
@@ -724,10 +724,9 @@ sub parse_sfd ( $ ) {
     $$result{'Basename'} = ucfirst $$result{'Basename'};
     ($result->{BaseName} = $result->{base}) =~ s/Base//;
 
-    # The name of the proto header referenced from generated headers.
-    # The caller decides what the proto file is actually called, so let
-    # it override the guess with --protoname.
-    $$result{'protoname'} = $protoname ne '' ? $protoname : $$result{'basename'};
+    # The name of the proto and inline headers, which include each other:
+    # the caller decides what the files are called.
+    $$result{'headername'} = $headername ne '' ? $headername : $$result{'basename'};
 
     return $result;
 }

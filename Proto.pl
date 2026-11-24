@@ -23,6 +23,7 @@ BEGIN {
       my $BASENAME  = $$sfd{'BASENAME'};
       my $BaseName  = $$sfd{'BaseName'};
       my $basetype  = $$sfd{'basetype'};
+      my $header    = $$sfd{'headername'};
 
       print "/* Automatically generated header (sfdc SFDC_VERSION)! Do not edit! */\n";
       print "\n";
@@ -65,12 +66,12 @@ BEGIN {
       print "#ifndef _NO_INLINE\n";
       print "# if defined(__GNUC__)\n";
       print "#  ifdef __AROS__\n";
-      print "#   include <defines/${basename}.h>\n";
+      print "#   include <defines/${header}.h>\n";
       print "#  else\n";
-      print "#   include <inline/${basename}.h>\n";
+      print "#   include <inline/${header}.h>\n";
       print "#  endif\n";
       print "# elif defined(__VBCC__)\n";
-      print "#  include <inline/${basename}_protos.h>\n";
+      print "#  include <inline/${header}_protos.h>\n";
       print "# else\n";
       print "#  include <pragmas/${basename}_pragmas.h>\n";
       print "# endif\n";
