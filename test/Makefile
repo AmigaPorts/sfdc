@@ -33,6 +33,7 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 	grep -q '^#define TestAdd(___a, ___b)' $(OUT)/inline.h
 	grep -q '^#define TestLookup(___list, ___name)' $(OUT)/inline.h
 	grep -q '^#define TestPrintf(' $(OUT)/inline.h
+	grep -qF 'register VOID (**__v1)() __asm("a1")' $(OUT)/inline.h
 	grep -q '^#define TestAdd(a, b) __TestAdd(TestBase, (a), (b))' $(OUT)/inline_vbcc.h
 	grep -q 'TestBase' $(OUT)/proto.h
 	grep -q '^#  include <inline/test_protos.h>' $(OUT)/proto.h
@@ -71,6 +72,7 @@ check-compile: $(LIB) $(OUT)/autoopen/.done $(TEST_INCLUDES)
 	  $(CC) -Os -Wall -Werror -D__libnix__ -c $$f -o $(OUT)/compile.o || exit 1; \
 	done
 	$(CC) -Os -Wall -Wextra -Werror -I$(OUT)/include -c include.c -o $(OUT)/compile.o
+	$(CC) -Os -Wall -Wextra -Werror -I$(OUT)/include -c call.c -o $(OUT)/compile.o
 	$(CC) -O0 -I$(OUT)/include -S include.c -o $(OUT)/include.s
 	! grep -q '_va:' $(OUT)/include.s
 	@echo "sfdc compile test passed"

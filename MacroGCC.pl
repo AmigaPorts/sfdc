@@ -13,11 +13,13 @@ BEGIN {
     sub rewrite_type_for_declaration {
         my ($type, $name) = @_;
 
-        # Detect function pointer types: something like "ULONG (*)()"
-        if ($type =~ /(.*)\(\s*\*\s*\)\s*(\(.*\))/) {
-            my $ret  = $1;
-            my $args = $2;
-            return "${ret}(*${name})${args}";
+        # Detect function pointer types: something like "ULONG (*)()", or
+        # "VOID (**)()" for a pointer to one
+        if ($type =~ /(.*)\(\s*(\*+)\s*\)\s*(\(.*\))/) {
+            my $ret   = $1;
+            my $stars = $2;
+            my $args  = $3;
+            return "${ret}(${stars}${name})${args}";
         }
 
         # Normal type
@@ -555,7 +557,7 @@ EOF
           $clean_type =~ s/^CONST_//;
           
           # For function pointer types, use void * to avoid declaration syntax issues
-          if ($clean_type =~ /\(\s*\*\s*\)\s*\(/) {
+          if ($clean_type =~ /\(\s*\*+\s*\)\s*\(/) {
               print "  void *__p_$names[$i] = (void *)($names[$i]);\\\n";
           } else {
               print "  $clean_type __p_$names[$i] = ($clean_type)($names[$i]);\\\n";
