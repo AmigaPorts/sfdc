@@ -1,6 +1,7 @@
 ==id $VER: test_lib.sfd 1.0 (10.09.2026)
 * Small SFD for the sfdc smoke test: plain calls, an alias, a
-* varargs pair and a private function.
+* varargs pair, a private function, and a function pointer with a
+* pointer to one.
 ==base _TestBase
 ==basetype struct Library *
 ==libname test.library
@@ -18,4 +19,6 @@ LONG TestPrintf(CONST_STRPTR format, ...) (a0,a1)
 VOID TestReset(VOID) ()
 ==private
 LONG TestPrivate(LONG a) (d0)
+==public
+VOID TestSetHandler(VOID (*handler)(), VOID (**old)()) (a0,a1)
 ==end
