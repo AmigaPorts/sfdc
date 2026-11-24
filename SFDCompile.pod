@@ -14,6 +14,7 @@ sfdc [options] file1.sfd [file2.sfd ...]
   Options:
     --addvectors=TYPE       Add default functions
     --gateprefix=PREFIX     Prefix for gatestub functions
+    --headername=NAME       Name of the proto and inline headers
     --help -h               Show full help message and exit
     --libarg=LOCATION       Where to pass the libbase
     --libprefix=PREFIX      Prefix for library functions
@@ -44,9 +45,26 @@ Sets a function name prefix for the gate stub functions when
 generating gatestubs or gateproto files.
 
 
+=item B<--headername>
+
+The name, without directory or suffix, under which the caller writes
+the headers of the B<proto> and B<macros> modes, which include each
+other: F<proto/NAME.h>, F<inline/NAME.h> or F<defines/NAME.h>, and
+F<inline/NAME_protos.h> for vbcc. The default is the base name of the
+library (C<muimaster> for F<muimaster.library>), which is where
+programs look for them, so leave it out unless the headers must be
+installed under another name. That is the case next to an SDK that
+ships its own headers under the base name: with C<xadmaster_lib>, the
+generated proto header includes F<inline/xadmaster_lib.h> and leaves
+the SDK's F<inline/xadmaster.h> alone. The F<clib/> and F<pragmas/>
+headers, which an SDK usually provides, keep the base name.
+
+
 =item B<--help>
 
 Show the full help message and exit.
+
+
 =item B<--libarg>
 
 Specifies where to place the library base argument when generating
@@ -209,14 +227,6 @@ The base name of the library or device (C<dos>, for example).
 
 If omitted, the result will be sent to the standard output instead of
 a file.
-
-=item B<--protoname>
-
-The name of the proto header file that generated headers reference,
-without path or extension (for example C<cybergraphics> to make the
-inline header include F<proto/cybergraphics.h>). The caller decides
-what the proto file is actually called, so use this to make the
-reference match. If omitted, the base name is used.
 
 =item B<--quiet>
 

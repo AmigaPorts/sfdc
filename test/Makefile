@@ -14,7 +14,7 @@ ifeq ($(origin CC),default)
 CC = m68k-amigaos-gcc
 endif
 
-all: check check-fd check-compile
+all: check check-headername check-fd check-compile
 
 # The library bases for libnix's startup code to open, one per kind of name
 AUTOOPEN_SFD = $(SFD) $(wildcard autoopen/*_lib.sfd)
@@ -47,6 +47,22 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 	grep -q '^_LVOTestAdd = -30' $(OUT)/lvolib.s
 	grep -q '^_LVOTestPrivate = -54' $(OUT)/lvolib.s
 	@echo "sfdc smoke test passed"
+
+# --headername: the proto and inline headers include each other under the
+# caller's name, and clib/ keeps the base name
+check-headername: $(OUT)/headername/proto.h $(OUT)/headername/inline.h
+	grep -q '^#   include <inline/test_lib.h>' $(OUT)/headername/proto.h
+	grep -q '^#  include <inline/test_lib_protos.h>' $(OUT)/headername/proto.h
+	grep -q '^#include <clib/test_protos.h>' $(OUT)/headername/proto.h
+	grep -q '^#include <proto/test_lib.h>' $(OUT)/headername/inline.h
+	@echo "sfdc headername test passed"
+
+$(OUT)/headername/proto.h: MODE = proto
+$(OUT)/headername/inline.h: MODE = macros
+
+$(OUT)/headername/proto.h $(OUT)/headername/inline.h: $(SFD) $(SFDC)
+	mkdir -p $(dir $@)
+	$(SFDC) --target=m68k-gcc-amigaos --mode=$(MODE) --headername=test_lib --output=$@ $<
 
 # With a cross compiler, what goes into a link library also compiles:
 #   make -C test check-compile CC=m68k-amigaos-gcc
@@ -143,4 +159,4 @@ $(OUT)/clib.h: $(SFD) $(SFDC) | $(OUT)
 clean:
 	rm -rf $(OUT)
 
-.PHONY: all check check-autoopen check-compile check-fd clean
+.PHONY: all check check-autoopen check-compile check-fd check-headername clean
