@@ -1,12 +1,13 @@
 ==id $VER: test_lib.sfd 1.0 (10.09.2026)
 * Small SFD for the sfdc smoke test: plain calls, an alias, a
-* varargs pair, a private function, and a function pointer with a
-* pointer to one.
+* varargs pair of each kind, a private function, and a function pointer
+* with a pointer to one.
 ==base _TestBase
 ==basetype struct Library *
 ==libname test.library
 ==include <exec/libraries.h>
 ==include <exec/lists.h>
+==include <utility/tagitem.h>
 ==bias 30
 ==public
 LONG TestAdd(LONG a, LONG b) (d0,d1)
@@ -21,4 +22,13 @@ VOID TestReset(VOID) ()
 LONG TestPrivate(LONG a) (d0)
 ==public
 VOID TestSetHandler(VOID (*handler)(), VOID (**old)()) (a0,a1)
+LONG TestFPrintfA(LONG fh, CONST_STRPTR format, APTR args) (d1,d2,d3)
+==varargs
+LONG TestFPrintf(LONG fh, CONST_STRPTR format, ...) (d1,d2,d3)
+APTR TestNewObjectA(CONST_STRPTR cl, struct TagItem *tags) (a0,a2)
+==varargs
+APTR TestNewObject(CONST_STRPTR cl, Tag tag1, ...) (a0,a2)
+LONG TestDPrintfA(CONST_STRPTR format, APTR args) (a0,d1)
+==varargs
+LONG TestDPrintf(CONST_STRPTR format, ...) (a0,d1)
 ==end
