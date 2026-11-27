@@ -35,6 +35,12 @@ check: $(OUT)/inline.h $(OUT)/inline_vbcc.h $(OUT)/proto.h $(OUT)/lvo.i $(OUT)/c
 	grep -q '^#define TestPrintf(' $(OUT)/inline.h
 	grep -qF 'register VOID (**__v1)() __asm("a1")' $(OUT)/inline.h
 	grep -q '^#define TestAdd(a, b) __TestAdd(TestBase, (a), (b))' $(OUT)/inline_vbcc.h
+	# vbcc: the variable arguments' address in the register of the "...",
+	# or of the last named argument when the array starts with it
+	grep -qF 'LONG __TestPrintf(__reg("a6") struct Library * , __reg("a0") CONST_STRPTR format , ... ) = "\tlea\t0(a7),a1\n\tjsr\t-42(a6)";' $(OUT)/inline_vbcc.h
+	grep -qF 'LONG __TestFPrintf(__reg("a6") struct Library * , __reg("d1") LONG fh , __reg("d2") CONST_STRPTR format , ... ) = "\tmove.l\td3,-(a7)\n\tmove.l\ta7,d3\n\taddq.l\t#4,d3\n\tjsr\t-66(a6)\n\tmove.l\t(a7)+,d3";' $(OUT)/inline_vbcc.h
+	grep -qF 'APTR __TestNewObject(__reg("a6") struct Library * , __reg("a0") CONST_STRPTR cl , Tag tag1 , ... ) = "\tmove.l\ta2,-(a7)\n\tlea\t4(a7),a2\n\tjsr\t-72(a6)\n\tmove.l\t(a7)+,a2";' $(OUT)/inline_vbcc.h
+	grep -qF 'LONG __TestDPrintf(__reg("a6") struct Library * , __reg("a0") CONST_STRPTR format , ... ) = "\tmove.l\ta7,d1\n\tjsr\t-78(a6)";' $(OUT)/inline_vbcc.h
 	grep -q 'TestBase' $(OUT)/proto.h
 	grep -q '^#  include <inline/test_protos.h>' $(OUT)/proto.h
 	grep -q '_LVOTestAdd' $(OUT)/lvo.i

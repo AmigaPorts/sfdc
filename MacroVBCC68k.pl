@@ -31,20 +31,47 @@ BEGIN {
         print "#if !defined(NO_INLINE_STDARG) && (__STDC__ == 1L) && (__STDC_VERSION__ >= 199901L)\n";
         my $stackpush = "";
         my $stackpop = "";
+        # The macro takes the arguments before the last named one, which
+        # comes with the variable ones
         my $last_stdarg = $$prototype{"numargs"} - 2;
+        # The function gets the address of an array of arguments in a
+        # register.  A printfcall such as Printf(format, ...) (d1,d2) has
+        # a register for every argument, the "..." included, and the array
+        # holds only the variable arguments.  A tagcall such as
+        # NewObject(cl, Tag tag1, ...) (a0,a1) has one register fewer, and
+        # the array starts with its last named argument, tag1.
+        my $array_arg = ($$prototype{'subtype'} // '') eq 'printfcall' ?
+            $$prototype{"numargs"} - 1 : $last_stdarg;
         for(my $arg = 0; $arg < $$prototype{"numargs"}; $arg++)
         {
           my $reg = $$prototype{'regs'}[$arg];
           my $type = $$prototype{'argtypes'}[$arg];
           $function .= ", ";
-          if(defined $reg && $arg < $last_stdarg)
+          if(defined $reg && $arg < $array_arg)
           {
             $function .= "__reg(\"" . $reg . "\") ";
           }
-          if(defined $reg && $arg == $last_stdarg)
+          if(defined $reg && $arg == $array_arg)
           {
-            $stackpush = "\\tmove.l\\t" . $reg . ",-(a7)\\n\\tlea\\t4(a7)," . $reg . "\\n";
-            $stackpop = "\\n\\tmovea.l\\t(a7)+," . $reg;
+            # The call clobbers d0, d1, a0 and a1 anyway, and restoring
+            # d0 would lose the result; any other register is kept
+            my $scratch = $reg =~ /^[ad][01]$/;
+            my $offset = $scratch ? 0 : 4;
+            if(!$scratch)
+            {
+              $stackpush = "\\tmove.l\\t" . $reg . ",-(a7)\\n";
+              $stackpop = "\\n\\tmove.l\\t(a7)+," . $reg;
+            }
+            # lea only loads an address register
+            if($reg =~ /^a/)
+            {
+              $stackpush .= "\\tlea\\t" . $offset . "(a7)," . $reg . "\\n";
+            }
+            else
+            {
+              $stackpush .= "\\tmove.l\\ta7," . $reg . "\\n";
+              $stackpush .= "\\taddq.l\\t#" . $offset . "," . $reg . "\\n" if $offset;
+            }
           }
           $function .= $$prototype{'args'}[$arg] . " ";
         }
